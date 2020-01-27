@@ -22,6 +22,7 @@
 static char* error_message = "usage\n  --port=# client app to connect to localhost port#";
 int rc = 0;
 int server_closed = 0; // flag if the server is closed
+int file_open = 0; // flag if file is open
 
 int sockfd = -1; // open socket
 
@@ -42,6 +43,9 @@ void checkRC(int alert) {
         fprintf(stderr, "ERROR: system call failure\r\n");
         if (sockfd >= 0) {
             close(sockfd);
+        }
+        if (file_open) {
+            fclose(log_file);
         }
         exit(1);
     }
@@ -90,6 +94,7 @@ int main(int argc, char** argv) {
             l = 1;
             log_path = optarg;
             log_file = fopen(log_path, "w+");
+            file_open = 1;
             break;
           case 'c': // --compress
             c = 1;
@@ -141,12 +146,6 @@ int main(int argc, char** argv) {
     checkRC(-1);
 
     signal(SIGPIPE, sigHandler);
-
-    // open log file
-    int logfd;
-    if (l) {
-        logfd = creat(log_path, 0666);
-    }
 
     // input
     char key_buf[256], sock_buf[256];
@@ -270,8 +269,8 @@ int main(int argc, char** argv) {
     rc = close(sockfd);
         checkRC(-1);
     if (l) {
-        rc = close(logfd);
-            checkRC(-1);
+        rc = fclose(log_file);
+        if (rc < 0) { checkRC(rc); }
     }
     if (c) {
         deflateEnd(&to_server);

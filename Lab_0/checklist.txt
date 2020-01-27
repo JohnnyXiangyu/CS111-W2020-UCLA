@@ -1,0 +1,10 @@
+program [done]
+make command [done]
+make check [done]
+make clean [done]
+make dist [done]
+segfault screenshot 1 [done]
+segfault screenshot 2 [done]
+README [done]
+
+target contains: lab0.c, Makefile, backtrace.png, breakpoint.png, README

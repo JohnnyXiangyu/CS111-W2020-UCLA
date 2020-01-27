@@ -1,0 +1,5 @@
+.vscode/
+lab1a
+*.tar.gz
+P1A_check.sh
+function.sh

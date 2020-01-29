@@ -29,6 +29,7 @@ int sockfd = -1; // open socket
 FILE* log_file = NULL; // file pointer to log
 
 int portno = 0; // port number
+int p = 0; // mark --port
 int l = 0; // flag need to log
 static char* log_path = ""; // path to logfile
 int c = 0; // flag need compression
@@ -110,6 +111,11 @@ int main(int argc, char** argv) {
             exit(1);
             break;
         }
+    }
+
+    if (!p) {
+        fprintf(stderr, "--port=# OPTION IS REQUIRED!\n");
+        exit(1);
     }
 
     struct sockaddr_in serv_addr;

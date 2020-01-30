@@ -17,7 +17,7 @@
 
 #include <zlib.h>
 
-static char* error_message = "usage\n  --port=# start server app with given port number indicated by #";
+static char* error_message = "usage\n  --port=# start server app with given port number indicated by #\n  --log=FILENAME logging communication into the designated filename\n";
 static char* shell_path = "/bin/bash";
 
 int rc = 0; // global: sys call return code
@@ -40,9 +40,15 @@ z_stream from_client; // decompress stream
 z_stream to_client; // compress stream
 
 // check sys call return code
-void checkRC(int alert) { 
+void checkRC(int alert, int is_syscall) { 
     if (rc == alert) {
-        fprintf(stderr, "ERROR: system call failure\r\n");
+        if (is_syscall) {
+            fprintf(stderr, "ERROR: system call failure\r\n%s\r\n", strerror(errno));
+        }
+        else {
+            fprintf(stderr, "ERROR: zlib failure\r\n");
+        }
+        
         if (newsockfd >= 0) {
             close(newsockfd);
         }
@@ -95,9 +101,9 @@ int main(int argc, char** argv) {
             zlib_init(&from_client);
             zlib_init(&to_client);
             rc = inflateInit(&from_client);
-            if (rc != Z_OK) { checkRC(rc); }
+            if (rc != Z_OK) { checkRC(rc, 0); }
             rc = deflateInit(&to_client, Z_DEFAULT_COMPRESSION);
-            if (rc != Z_OK) { checkRC(rc); }
+            if (rc != Z_OK) { checkRC(rc, 0); }
             break;
           case '?': // error
             fprintf(stderr, "%s\r\n", error_message);
@@ -113,9 +119,9 @@ int main(int argc, char** argv) {
 
     // open child process
     rc = pipe(from_shell);
-    checkRC(-1);
+    checkRC(-1, 1);
     rc = pipe(to_shell);
-    checkRC(-1);
+    checkRC(-1, 1);
     pid = fork();
     if (pid < 0) {
         fprintf(stderr, "ERROR: fork() return non-zero\r\n");
@@ -124,21 +130,21 @@ int main(int argc, char** argv) {
     if (pid == 0) { // child process
         // step 1: dup file descriptors and close some pipes
         rc = close(0); // stdin
-            checkRC(-1);
+            checkRC(-1, 1);
         rc = close(1); // stdout
-            checkRC(-1);
+            checkRC(-1, 1);
         rc = close(2); // stderr
-            checkRC(-1);
+            checkRC(-1, 1);
         rc = dup2(to_shell[0], 0);
-            checkRC(-1);
+            checkRC(-1, 1);
         rc = dup2(from_shell[1], 1);
-            checkRC(-1);
+            checkRC(-1, 1);
         rc = dup2(from_shell[1], 2);
-            checkRC(-1);
+            checkRC(-1, 1);
         rc = close(to_shell[1]); // close ends of the pipes not needed in child process
-            checkRC(-1);
+            checkRC(-1, 1);
         rc = close(from_shell[0]);
-            checkRC(-1);
+            checkRC(-1, 1);
 
         // step 2: open a shell
         execl(shell_path, "bash", (const char*)NULL);
@@ -148,9 +154,9 @@ int main(int argc, char** argv) {
     }
     else { // close ends of pipes not needed in main process
         rc = close(from_shell[1]);
-            checkRC(-1);
+            checkRC(-1, 1);
         rc = close(to_shell[0]);
-            checkRC(-1);
+            checkRC(-1, 1);
     }
 
     signal(SIGPIPE, sigHandler);
@@ -192,7 +198,7 @@ int main(int argc, char** argv) {
         int sock_in = 0; int shell_in = 0;
         // poll stdin and from_shell[0]
         rc = poll(polls, 2, 0);
-            checkRC(-1);
+            checkRC(-1, 1);
         if (rc > 0) {
             sock_in = polls[0].revents & POLLIN;
             shell_in = polls[1].revents & POLLIN;
@@ -207,7 +213,7 @@ int main(int argc, char** argv) {
             char* read_buf = sock_buf; // container for the right buffer to read
             bzero(sock_buf, 256);
             rc = read(newsockfd, sock_buf, 256);
-                checkRC(-1);
+                checkRC(-1, 1);
             int count = rc; // how many bytes read from socket
             if (count == 0) { client_open = 0; }
 
@@ -228,34 +234,34 @@ int main(int argc, char** argv) {
             for (i = 0; i < count; i++) {
                 if (read_buf[i] == '\r' || read_buf[i] == '\n') { // endl handling
                     rc = write(to_shell[1], "\n", 1);
-                        checkRC(-1);
+                        checkRC(-1, 1);
                 }
                 else if (read_buf[i] == 0x04) { // ^D
                     rc = close(to_shell[1]);
-                        checkRC(-1);
+                        checkRC(-1, 1);
                     to_closed = 1;
                 }
                 else if (read_buf[i] == 0x03) { // ^C
                     rc = kill(pid, SIGINT);
-                        checkRC(-1);
+                        checkRC(-1, 1);
                 }
                 else { // normal character
                     rc = write(to_shell[1], read_buf+i, 1);
-                        checkRC(-1);
+                        checkRC(-1, 1);
                 }
             }
         }
         if (shell_in) { // if can read from shell
             bzero(shell_buf, 256);
             rc = read(polls[1].fd, shell_buf, 256);
-                checkRC(-1);
+                checkRC(-1, 1);
             int count = rc; // how many read from shell
 
             int i = 0;
             for (i = 0; i < count; i++) {
                 if (shell_buf[i] == 0x04) { // shell close
                     rc = close(from_shell[0]);
-                        checkRC(-1);
+                        checkRC(-1, 1);
                     from_closed = 1;
                     if (c) {
                         count = i+1;
@@ -264,11 +270,11 @@ int main(int argc, char** argv) {
                 }
                 else if (shell_buf[i] == '\n' && !c) {
                     rc = write(newsockfd, "\n", 1);
-                        checkRC(-1);
+                        checkRC(-1, 1);
                 }
                 else if (!c) {
                     rc = write(newsockfd, shell_buf+i, 1);
-                        checkRC(-1);
+                        checkRC(-1, 1);
                 }
             }
             if (c) {
@@ -293,7 +299,7 @@ int main(int argc, char** argv) {
             // waitpid
             int status = 0;
             rc = waitpid(pid, &status, 0);
-                checkRC(-1);
+                checkRC(-1, 1);
             fprintf(stderr, "SHELL EXIT SIGNAL=%d STATUS=%d\r\n", status&0x007f, (status&0xff00)>>8);
             cont = 0;
         }
@@ -301,7 +307,7 @@ int main(int argc, char** argv) {
 
     // TODO: close socket?
     rc = close(newsockfd);
-        checkRC(-1);
+        checkRC(-1, 1);
     if (c) {
         deflateEnd(&to_client);
         inflateEnd(&from_client);

@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <strings.h>
 #include <fcntl.h>
+#include <string.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -39,11 +40,13 @@ z_stream to_server; // compress stream
 
 
 // check sys call return code
-void checkRC(int alert) {
+void checkRC(int alert, int is_syscall) { 
     if (rc == alert) {
-        fprintf(stderr, "ERROR: system call failure\r\n");
-        if (sockfd >= 0) {
-            close(sockfd);
+        if (is_syscall) {
+            fprintf(stderr, "ERROR: system call failure\r\n%s\r\n", strerror(errno));
+        }
+        else {
+            fprintf(stderr, "ERROR: zlib failure\r\n");
         }
         if (file_open) {
             fclose(log_file);
@@ -102,9 +105,9 @@ int main(int argc, char** argv) {
             zlib_init(&from_server);
             zlib_init(&to_server);
             rc = inflateInit(&from_server);
-            if (rc != Z_OK) { checkRC(rc); }
+            if (rc != Z_OK) { checkRC(rc, 0); }
             rc = deflateInit(&to_server, Z_DEFAULT_COMPRESSION);
-            if (rc != Z_OK) { checkRC(rc); }
+            if (rc != Z_OK) { checkRC(rc, 0); }
             break;
           case '?':
             fprintf(stderr, "%s\r\n", error_message);
@@ -141,7 +144,7 @@ int main(int argc, char** argv) {
     // get current setting and create a modified new setting
     struct termios old_setting, new_setting;
     rc = tcgetattr(0, &old_setting);
-    checkRC(-1);
+    checkRC(-1, 1);
     new_setting = old_setting;
     new_setting.c_iflag = ISTRIP;
     new_setting.c_oflag = 0;
@@ -149,7 +152,7 @@ int main(int argc, char** argv) {
     // apply changes TODO: in the man page it says this call will return success 
         // whenever at least 1 change has been made, need to further check
     rc = tcsetattr(0, TCSANOW, &new_setting);
-    checkRC(-1);
+    checkRC(-1, 1);
 
     signal(SIGPIPE, sigHandler);
 
@@ -171,7 +174,7 @@ int main(int argc, char** argv) {
         // poll stdin and sockfd
         key_in = 0;
         rc = poll(fds, 2, 0);
-        checkRC(-1);
+        checkRC(-1, 1);
         if (rc > 0) {
             key_in = fds[0].revents & POLLIN;
             sock_in = fds[1].revents & POLLIN;
@@ -184,25 +187,25 @@ int main(int argc, char** argv) {
             char* write_buf = key_buf; // container of buffer to write from
             bzero(key_buf, 256);
             rc = read(0, key_buf, 256);
-                checkRC(-1);
+                checkRC(-1, 1);
             int count = rc;
             int i = 0;
             for (i = 0; i < count; i++) {
                 if (key_buf[i] == '\r' || key_buf[i] == '\n') { // endl handling
                     rc = write(1, "\r\n", 2);
-                        checkRC(-1);
+                        checkRC(-1, 1);
                 }
                 else if (key_buf[i] == 0x04) { // ^D
                     rc = write(1, "^D", 2);
-                        checkRC(-1);
+                        checkRC(-1, 1);
                 }
                 else if (key_buf[i] == 0x03) { // ^C
                     rc = write(1, "^C", 2);
-                        checkRC(-1);
+                        checkRC(-1, 1);
                 }
                 else { // normal character
                     rc = write(1, key_buf+i, 1);
-                        checkRC(-1);
+                        checkRC(-1, 1);
                 }
             }
 
@@ -230,7 +233,7 @@ int main(int argc, char** argv) {
             char* read_buf = sock_buf; // container of right buffer to read
             bzero(sock_buf, 256);
             rc = read(fds[1].fd, sock_buf, 256);
-                checkRC(-1);
+                checkRC(-1, 1);
             int count = rc;
             if (count == 0) cont = 0;
 
@@ -257,11 +260,11 @@ int main(int argc, char** argv) {
             for (i = 0; i < count; i++) {
                 if (read_buf[i] == '\n') {
                     rc = write(1, "\r\n", 2);
-                    checkRC(-1);
+                    checkRC(-1, 1);
                 }
                 else {
                     rc = write(1, read_buf+i, 1);
-                    checkRC(-1);
+                    checkRC(-1, 1);
                 }
             }
         }
@@ -269,14 +272,14 @@ int main(int argc, char** argv) {
 
     // restore changes
     rc = tcsetattr(0, TCSANOW, &old_setting);
-        checkRC(-1);
+        checkRC(-1, 1);
 
     //close file descriptors
     rc = close(sockfd);
-        checkRC(-1);
+        checkRC(-1, 1);
     if (l) {
         rc = fclose(log_file);
-        if (rc < 0) { checkRC(rc); }
+        if (rc < 0) { checkRC(rc, 1); }
     }
     if (c) {
         deflateEnd(&to_server);

@@ -2,7 +2,6 @@
 lab1b-server
 lab1b-client
 *.tar.gz
-P1B_check.sh
 function.sh
 sample_zlib.c
 sample_server.c

@@ -33,7 +33,7 @@ int pid = 0; // child process pid
 int from_shell[2]; // read pipe
 int to_shell[2]; // write pipe
 int portno = 0; // port number
-// int p = 0; // if port is given
+int p = 0; // if port is given
 int c = 0; // flag need to compress
 
 z_stream from_client; // decompress stream
@@ -94,16 +94,10 @@ int main(int argc, char** argv) {
             break;
           case 'p': // --port=#
             portno = atoi(optarg);
-            // p = 1; // mark given
+            p = 1; // mark given
             break;
           case 'c': // --compression
             c = 1;
-            zlib_init(&from_client);
-            zlib_init(&to_client);
-            rc = inflateInit(&from_client);
-            if (rc != Z_OK) { checkRC(rc, 0); }
-            rc = deflateInit(&to_client, Z_DEFAULT_COMPRESSION);
-            if (rc != Z_OK) { checkRC(rc, 0); }
             break;
           case '?': // error
             fprintf(stderr, "%s\r\n", error_message);
@@ -112,10 +106,19 @@ int main(int argc, char** argv) {
         }
     }
 
-    // if (!p) {
-    //     fprintf(stderr, "--port=# OPTION IS REQUIRED!\n");
-    //     exit(1);
-    // }
+    if (!p) {
+        fprintf(stderr, "--port=# OPTION IS REQUIRED!\n");
+        exit(1);
+    }
+
+    if (c) {
+        zlib_init(&from_client);
+        zlib_init(&to_client);
+        rc = inflateInit(&from_client);
+        if (rc != Z_OK) { checkRC(rc, 0); }
+        rc = deflateInit(&to_client, Z_DEFAULT_COMPRESSION);
+        if (rc != Z_OK) { checkRC(rc, 0); }
+    }
 
     // open child process
     rc = pipe(from_shell);

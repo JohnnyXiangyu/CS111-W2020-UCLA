@@ -92,22 +92,23 @@ int main(int argc, char** argv) {
             exit(1);
             break;
           case 'p': // --port=#
+            p = 1; // marks --port given
             portno = atoi(optarg);
             break;
           case 'l': // --log=""
             l = 1;
             log_path = optarg;
-            log_file = fopen(log_path, "w+");
-            file_open = 1;
+            // log_file = fopen(log_path, "w+");
+            // file_open = 1;
             break;
           case 'c': // --compress
             c = 1;
-            zlib_init(&from_server);
-            zlib_init(&to_server);
-            rc = inflateInit(&from_server);
-            if (rc != Z_OK) { checkRC(rc, 0); }
-            rc = deflateInit(&to_server, Z_DEFAULT_COMPRESSION);
-            if (rc != Z_OK) { checkRC(rc, 0); }
+            // zlib_init(&from_server);
+            // zlib_init(&to_server);
+            // rc = inflateInit(&from_server);
+            // if (rc != Z_OK) { checkRC(rc, 0); }
+            // rc = deflateInit(&to_server, Z_DEFAULT_COMPRESSION);
+            // if (rc != Z_OK) { checkRC(rc, 0); }
             break;
           case '?':
             fprintf(stderr, "%s\r\n", error_message);
@@ -116,10 +117,24 @@ int main(int argc, char** argv) {
         }
     }
 
-    // if (!p) {
-    //     fprintf(stderr, "--port=# OPTION IS REQUIRED!\n");
-    //     exit(1);
-    // }
+    if (!p) {
+        fprintf(stderr, "--port=# OPTION IS REQUIRED!\n");
+        exit(1);
+    }
+
+    if (c) {
+        zlib_init(&from_server);
+        zlib_init(&to_server);
+        rc = inflateInit(&from_server);
+        if (rc != Z_OK) { checkRC(rc, 0); }
+        rc = deflateInit(&to_server, Z_DEFAULT_COMPRESSION);
+        if (rc != Z_OK) { checkRC(rc, 0); }
+    }
+
+    if (l) {
+        log_file = fopen(log_path, "w+");
+        file_open = 1;
+    }
 
     struct sockaddr_in serv_addr;
     struct hostent *server;

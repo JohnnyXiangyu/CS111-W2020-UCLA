@@ -116,10 +116,10 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (!p) {
-        fprintf(stderr, "--port=# OPTION IS REQUIRED!\n");
-        exit(1);
-    }
+    // if (!p) {
+    //     fprintf(stderr, "--port=# OPTION IS REQUIRED!\n");
+    //     exit(1);
+    // }
 
     struct sockaddr_in serv_addr;
     struct hostent *server;

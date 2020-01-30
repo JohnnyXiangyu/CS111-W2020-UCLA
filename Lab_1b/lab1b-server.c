@@ -33,7 +33,7 @@ int pid = 0; // child process pid
 int from_shell[2]; // read pipe
 int to_shell[2]; // write pipe
 int portno = 0; // port number
-int p = 0; // if port is given
+// int p = 0; // if port is given
 int c = 0; // flag need to compress
 
 z_stream from_client; // decompress stream
@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
             break;
           case 'p': // --port=#
             portno = atoi(optarg);
-            p = 1; // mark given
+            // p = 1; // mark given
             break;
           case 'c': // --compression
             c = 1;
@@ -112,10 +112,10 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (!p) {
-        fprintf(stderr, "--port=# OPTION IS REQUIRED!\n");
-        exit(1);
-    }
+    // if (!p) {
+    //     fprintf(stderr, "--port=# OPTION IS REQUIRED!\n");
+    //     exit(1);
+    // }
 
     // open child process
     rc = pipe(from_shell);

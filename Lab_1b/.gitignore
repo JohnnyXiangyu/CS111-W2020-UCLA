@@ -2,7 +2,7 @@
 lab1b-server
 lab1b-client
 *.tar.gz
-function.sh
+functions.sh
 sample_zlib.c
 sample_server.c
 *.log

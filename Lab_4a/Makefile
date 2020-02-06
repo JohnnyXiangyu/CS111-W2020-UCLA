@@ -14,3 +14,6 @@ connect:
 
 lconnect:
 	ssh $(usr)@$(lhost)
+
+clean: 
+	rm -f lab4a-805061659.tar.gz

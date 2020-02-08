@@ -6,7 +6,6 @@
 
 /* muti-threading objective variable */
 long long counter = 0;
-typedef __clockid_t clockid_t;
 
 /* global variables */
 int num_thr = 1; /* number of threads */

@@ -8,18 +8,17 @@
 long long counter = 0;
 
 /* global variables */
-int num_thr = 1; /* number of threads */
-int num_itr = 1; /* number of iterations */
+int num_thr = 1;    /* number of threads */
+int num_itr = 1;    /* number of iterations */
 int debug_flag = 0; /* flag debug mode */
 
 /* option error message */
-static char* error_message = 
-"usage\n  --threads=# number of threads to run\n"
-"  --iterations=# number of iterations to run\n"
-"  --debug activate debug mode";
+static char *error_message =
+    "usage\n  --threads=# number of threads to run\n"
+    "  --iterations=# number of iterations to run\n"
+    "  --debug activate debug mode";
 
-
-int m_clock_gettime(clockid_t id, struct timespec* tp) {
+int m_clock_gettime(clockid_t id, struct timespec *tp) {
     int rc = 0;
     rc = clock_gettime(id, tp);
     if (rc != 0) {
@@ -30,19 +29,15 @@ int m_clock_gettime(clockid_t id, struct timespec* tp) {
         return rc;
 }
 
-
 void add(long long *pointer, long long value) {
     long long sum = *pointer + value;
     *pointer = sum;
 }
 
-
-void* threadRoutine(void* vargp) {
-
+void *threadRoutine(void *vargp) {
 }
 
-
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     // precess args using getopt
     struct option options[5] = {
         {"threads", required_argument, 0, 't'},
@@ -54,20 +49,20 @@ int main(int argc, char** argv) {
     int temp = 0;
     while ((temp = getopt_long(argc, argv, "-", options, NULL)) != -1) {
         switch (temp) {
-          case 1:
-            fprintf(stderr, "Bad non-option argument: %s\n%s\n", argv[optind-1], error_message);
+        case 1:
+            fprintf(stderr, "Bad non-option argument: %s\n%s\n", argv[optind - 1], error_message);
             exit(1);
             break;
-          case 't': // --threads=#
+        case 't': // --threads=#
             num_thr = optarg;
             break;
-          case 'i': // --iterations=#
+        case 'i': // --iterations=#
             num_itr = optarg;
             break;
-          case 'd': // --debug
+        case 'd': // --debug
             debug_flag = 1;
             break;
-          case '?':
+        case '?':
             fprintf(stderr, "%s\r\n", error_message);
             exit(1);
             break;
@@ -79,6 +74,5 @@ int main(int argc, char** argv) {
     m_clock_gettime(CLOCK_REALTIME, &start_time);
 
     /* start some threads */
-    pthread_t* tids = (pthread_t*) malloc(sizeof(pthread_t) * num_thr);
-
+    pthread_t *tids = (pthread_t *)malloc(sizeof(pthread_t) * num_thr);
 }

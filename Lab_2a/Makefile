@@ -1,5 +1,5 @@
 cc=gcc
-flags=-g -Wall -Wextra
+flags=-g -Wall -Wextra -lpthread
 
 build: add
 

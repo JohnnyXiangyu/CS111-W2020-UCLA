@@ -11,12 +11,14 @@ long long counter = 0;
 int num_thr = 1;    /* number of threads */
 int num_itr = 1;    /* number of iterations */
 int debug_flag = 0; /* flag debug mode */
+static char* test_name = "add-none";
 
 /* option error message */
 static char *error_message =
     "usage\n  --threads=# number of threads to run\n"
     "  --iterations=# number of iterations to run\n"
     "  --debug activate debug mode";
+
 
 int m_clock_gettime(clockid_t id, struct timespec *tp) {
     int rc = 0;
@@ -35,6 +37,9 @@ void add(long long *pointer, long long value) {
 }
 
 void *threadRoutine(void *vargp) {
+    add(&counter, 1);
+    add(&counter, -1);
+    pthread_exit(0);
 }
 
 int main(int argc, char **argv) {
@@ -54,10 +59,10 @@ int main(int argc, char **argv) {
             exit(1);
             break;
         case 't': // --threads=#
-            num_thr = optarg;
+            num_thr = atoi(optarg);
             break;
         case 'i': // --iterations=#
-            num_itr = optarg;
+            num_itr = atoi(optarg);
             break;
         case 'd': // --debug
             debug_flag = 1;
@@ -74,5 +79,24 @@ int main(int argc, char **argv) {
     m_clock_gettime(CLOCK_REALTIME, &start_time);
 
     /* start some threads */
-    pthread_t *tids = (pthread_t *)malloc(sizeof(pthread_t) * num_thr);
+    pthread_t *tid = (pthread_t *)malloc(sizeof(pthread_t) * num_thr);
+    int i = 0;
+    for (i = 0; i < num_thr; i++) {
+        pthread_create(&tid[i], NULL, threadRoutine, NULL);
+    }
+    for (i = 0; i < num_thr; i++) {
+        pthread_join(tid[i], NULL);
+    }
+
+    /* note end time */
+    struct timespec end_time;
+    m_clock_gettime(CLOCK_REALTIME, &end_time);
+
+    /* output */
+    long ops = num_thr*num_itr*2;
+    long run_time = end_time.tv_nsec - start_time.tv_nsec;
+    printf("%s, %d, %d, %ld, %ld, %ld, %lld\n", test_name, num_thr, num_itr, ops, 
+          run_time, run_time / ops, counter);
+
+    free(tid);
 }

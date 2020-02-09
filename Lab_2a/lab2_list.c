@@ -13,7 +13,7 @@ long long num_thr = 1;    /* number of threads */
 long long num_itr = 1;    /* number of iterations */
 long long num_elements = 0;;
 int debug_flag = 0; /* flag debug mode */
-int opt_yield = 0; /* mask yield type */
+extern int opt_yield;
 static char* yield_type = "none";
 static char* sync_type = "none";
 

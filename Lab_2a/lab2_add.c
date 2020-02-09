@@ -37,8 +37,13 @@ void add(long long *pointer, long long value) {
 }
 
 void *threadRoutine(void *vargp) {
-    add(&counter, 1);
-    add(&counter, -1);
+    int i;
+    for (i = 0; i < num_itr; i++) {
+        add(&counter, 1);
+    }
+    for (i = 0; i < num_itr; i++) {
+        add(&counter, -1);
+    }
     pthread_exit(0);
 }
 

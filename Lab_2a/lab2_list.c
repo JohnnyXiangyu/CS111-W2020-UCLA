@@ -37,7 +37,7 @@ void* m_malloc(size_t __size) {
     void* rc = 0;
     rc = malloc(__size);
     if (rc == NULL) {
-        fprintf(stderr, "ERROR: malloc() return NULL, exiting ...\n");
+        fprintf(stderr, "ERROR: malloc() return NULL, exiting...\n");
         exit(1);
     }
     else
@@ -48,7 +48,7 @@ int m_clock_gettime(clockid_t id, struct timespec *tp) {
     int rc = 0;
     rc = clock_gettime(id, tp);
     if (rc != 0) {
-        fprintf(stderr, "ERROR: clock_gettime() return %d, exiting ...\n", rc);
+        fprintf(stderr, "ERROR: clock_gettime() return %d, exiting...\n", rc);
         exit(1);
     }
     else
@@ -59,7 +59,7 @@ int m_clock_gettime(clockid_t id, struct timespec *tp) {
 // int m_pthread_mutex_init(pthread_mutex_t *__mutex, const pthread_mutexattr_t *__mutexattr) {
 //     int rc = pthread_mutex_init(__mutex, __mutexattr);
 //     if (rc != 0) {
-//         fprintf(stderr, "ERROR: pthread_mutex_init() returned %d, exiting ...\n", rc);
+//         fprintf(stderr, "ERROR: pthread_mutex_init() returned %d, exiting...\n", rc);
 //         exit(1);
 //     }
 //     else 
@@ -71,7 +71,7 @@ int m_pthread_create(pthread_t *__restrict__ __newthread, const pthread_attr_t *
                      void *(*__start_routine)(void *), void *__restrict__ __arg) {
     int rc = pthread_create(__newthread, __attr, __start_routine, __arg);
     if (rc != 0) {
-        fprintf(stderr, "ERROR: pthread_create() returned %d, exiting ...\n", rc);
+        fprintf(stderr, "ERROR: pthread_create() returned %d, exiting...\n", rc);
         exit(1);
     }
     else 
@@ -82,7 +82,7 @@ int m_pthread_create(pthread_t *__restrict__ __newthread, const pthread_attr_t *
 int m_pthread_join(pthread_t __th, void **__thread_return) {
     int rc = pthread_join(__th, __thread_return);
     if (rc != 0) {
-        fprintf(stderr, "ERROR: pthread_join() returned %d, exiting ...\n", rc);
+        fprintf(stderr, "ERROR: pthread_join() returned %d, exiting...\n", rc);
         exit(1);
     }
     else 
@@ -93,7 +93,7 @@ int m_pthread_join(pthread_t __th, void **__thread_return) {
 // int m_pthread_mutex_lock(pthread_mutex_t *__mutex) {
 //     int rc = pthread_mutex_lock(__mutex);
 //     if (rc != 0) {
-//         fprintf(stderr, "ERROR: pthread_mutex_lock() returned %d, exiting ...\n", rc);
+//         fprintf(stderr, "ERROR: pthread_mutex_lock() returned %d, exiting...\n", rc);
 //         exit(1);
 //     }
 //     else 
@@ -104,7 +104,7 @@ int m_pthread_join(pthread_t __th, void **__thread_return) {
 // int m_pthread_mutex_unlock(pthread_mutex_t *__mutex) {
 //     int rc = pthread_mutex_unlock(__mutex);
 //     if (rc != 0) {
-//         fprintf(stderr, "ERROR: pthread_mutex_unlock() returned %d, exiting ...\n", rc);
+//         fprintf(stderr, "ERROR: pthread_mutex_unlock() returned %d, exiting...\n", rc);
 //         exit(1);
 //     }
 //     else 
@@ -133,6 +133,17 @@ void memoryFucked(int arg) {
 }
 
 
+/* debug mode only: print the whole list starting from head */
+void printList() {
+    SortedListElement_t* temp = &head;
+    do {
+        fprintf(stderr, "%ld\n  prev:%ld\n  next:%ld\n", (long)temp, (long)temp->prev, (long)temp->next);
+        temp = temp->next;
+    } while (temp != &head);
+    fprintf(stderr, "!\n");
+}
+
+
 /* thread routine */
 void* threadRoutine(void* vargp) {
     long long my_id = (long long) vargp;
@@ -142,11 +153,15 @@ void* threadRoutine(void* vargp) {
     for (i = start; i < end; i++) {
         SortedList_insert(&head, &elements[i]);
     }
-    SortedList_length(&head);
+    if (debug_flag) { printList(); }
+    if (SortedList_length(&head) == -1) {
+        fprintf(stderr, "ERROR: SortedList_length() return -1, exiting...\n");
+        pthread_exit((void*) 1);
+    }
     for (i = start; i < end; i++) {
         SortedListElement_t* temp = SortedList_lookup(&head, keys[i]);
         if (SortedList_delete(temp)) {
-            fprintf(stderr, "ERROR: SortedList_delete() return 1, exiting ...\n");
+            fprintf(stderr, "ERROR: SortedList_delete() return 1, exiting...\n");
             pthread_exit((void*) 1);
         }
     }
@@ -210,6 +225,7 @@ int main(int argc, char **argv) {
                 opt_yield = opt_yield | LOOKUP_YIELD;
                 break;
             }
+            i ++;
         }
     }
 
@@ -280,7 +296,7 @@ int main(int argc, char **argv) {
     struct timespec end_time;
     m_clock_gettime(CLOCK_REALTIME, &end_time);
 
-    /* report */ // TODO
+    /* report */
     long long ops = num_thr * num_itr * 3;
     long long run_time = end_time.tv_nsec - start_time.tv_nsec;
     run_time += (end_time.tv_sec - start_time.tv_sec) * 1000000000;

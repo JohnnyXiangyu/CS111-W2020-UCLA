@@ -13,7 +13,8 @@ long long num_thr = 1;    /* number of threads */
 long long num_itr = 1;    /* number of iterations */
 int debug_flag = 0; /* flag debug mode */
 int opt_yield = 0; /* flag yield */
-char sync = 0;
+char sync = 0; /* flag which kind of sync */
+void (*add_func)(long long*, long long); /* container variable for addition func */
 
 /* global locks */
 pthread_mutex_t mutex;
@@ -38,7 +39,6 @@ int m_clock_gettime(clockid_t id, struct timespec *tp) {
         return rc;
 }
 
-
 /* safe wrap of pthread_mutex_init */
 int m_pthread_mutex_init(pthread_mutex_t *__mutex, const pthread_mutexattr_t *__mutexattr) {
     int rc = pthread_mutex_init(__mutex, __mutexattr);
@@ -49,7 +49,6 @@ int m_pthread_mutex_init(pthread_mutex_t *__mutex, const pthread_mutexattr_t *__
     else 
         return rc;
 }
-
 
 /* safe wrap of pthread_create */
 int m_pthread_create(pthread_t *__restrict__ __newthread, const pthread_attr_t *__restrict__ __attr, 
@@ -63,7 +62,6 @@ int m_pthread_create(pthread_t *__restrict__ __newthread, const pthread_attr_t *
         return rc;
 }
 
-
 /* safe wrap of pthread_join */
 int m_pthread_join(pthread_t __th, void **__thread_return) {
     int rc = pthread_join(__th, __thread_return);
@@ -74,7 +72,6 @@ int m_pthread_join(pthread_t __th, void **__thread_return) {
     else 
         return rc;
 }
-
 
 int m_pthread_mutex_lock(pthread_mutex_t *__mutex) {
     int rc = pthread_mutex_lock(__mutex);
@@ -104,56 +101,38 @@ void add(long long *pointer, long long value) {
     *pointer = sum;
 }
 
-void *unsafeRoutine(void *vargp) {
-    long long i = (long long) vargp;
-    for (i = 0; i < num_itr; i++) {
-        add(&counter, 1);
-    }
-    for (i = 0; i < num_itr; i++) {
-        add(&counter, -1);
-    }
-    pthread_exit(0);
+void mutexAdd(long long *pointer, long long value) {
+    m_pthread_mutex_lock(&mutex);
+    long long sum = *pointer + value;
+    m_pthread_mutex_unlock(&mutex);
+    if (opt_yield)
+        sched_yield();
+    *pointer = sum;
 }
 
-void *mutexRoutine(void * vargp) {
-    long long i = (long long) vargp;
-    for (i = 0; i < num_itr; i++) {
-        m_pthread_mutex_lock(&mutex);
-        add(&counter, 1);
-        m_pthread_mutex_unlock(&mutex);
-    }
-    for (i = 0; i < num_itr; i++) {
-        m_pthread_mutex_lock(&mutex);
-        add(&counter, -1);
-        m_pthread_mutex_unlock(&mutex);
-    }
-    pthread_exit(0);
+void spinLockAdd(long long *pointer, long long value) {
+    while (__sync_lock_test_and_set(&spin_lock, 1));
+    long long sum = *pointer + value;
+    if (opt_yield)
+        sched_yield();
+    *pointer = sum;
+    __sync_lock_release(&spin_lock);
 }
 
-
-void *spinRoutine(void * vargp) {
-    long long i = (long long) vargp;
-    for (i = 0; i < num_itr; i++) {
-        while (__sync_lock_test_and_set(&spin_lock, 1));
-        add(&counter, 1);
-        __sync_lock_release(&spin_lock);
-    }
-    for (i = 0; i < num_itr; i++) {
-        while (__sync_lock_test_and_set(&spin_lock, 1));
-        add(&counter, -1);
-        __sync_lock_release(&spin_lock);
-    }
-    pthread_exit(0);
+void atomAdd(long long *pointer, long long value) {
+    long long sum = *pointer + value;
+    if (opt_yield)
+        sched_yield();
+    *pointer = sum;
 }
 
-
-void *atomRoutine(void * vargp) {
+void *threadRoutine(void *vargp) {
     long long i = (long long) vargp;
     for (i = 0; i < num_itr; i++) {
-        add(&counter, 1);
+        add_func(&counter, 1);
     }
     for (i = 0; i < num_itr; i++) {
-        add(&counter, -1);
+        add_func(&counter, -1);
     }
     pthread_exit(0);
 }
@@ -161,7 +140,7 @@ void *atomRoutine(void * vargp) {
 
 int main(int argc, char **argv) {
     static char* sync_type = "none";
-    void* (*thread_routine)(void*) = unsafeRoutine;
+    add_func = add;
 
     // precess args using getopt
     struct option options[6] = {
@@ -223,14 +202,14 @@ int main(int argc, char **argv) {
     if (sync) {
         switch (sync) {
           case 'm': /* mutex */
-            thread_routine = mutexRoutine;
+            add_func = mutexAdd;
             m_pthread_mutex_init(&mutex, NULL);
             break;
           case 's':
-            thread_routine = spinRoutine;
+            add_func = spinLockAdd;
             break;
           case 'c':
-            thread_routine = atomRoutine;
+            add_func = atomAdd;
             break;
         }
     }
@@ -243,7 +222,7 @@ int main(int argc, char **argv) {
     pthread_t *tid = (pthread_t *)malloc(sizeof(pthread_t) * num_thr);
     long long i = 0;
     for (i = 0; i < num_thr; i++) {
-        m_pthread_create(&tid[i], NULL, thread_routine, NULL);
+        m_pthread_create(&tid[i], NULL, threadRoutine, NULL);
     }
     for (i = 0; i < num_thr; i++) {
         pthread_join(tid[i], NULL);

@@ -55,12 +55,15 @@ int insertBetween(SortedListElement_t* pre, SortedListElement_t* nex, SortedList
     return 0;
 }
 
+
+/* delete a given node */
 int deleteMe(SortedListElement_t* element) {
     element->prev->next = element->next;
     element->next->prev = element->prev;
 
     return 0;
 }
+
 
 void SortedList_insert(SortedList_t *list, SortedListElement_t *element) {
     SortedListElement_t* temp_node = list->next;
@@ -71,28 +74,37 @@ void SortedList_insert(SortedList_t *list, SortedListElement_t *element) {
         temp_node = temp_node->next;
         nex = temp_node;
     }
+    if (opt_yield & INSERT_YIELD) {
+        sched_yield();
+    }
     insertBetween(pre, nex, element);
 }
 
+
 int SortedList_delete( SortedListElement_t *element) {
-    if (element
-        && element->next->prev == element->prev->next
-        && element->prev->next == element /* check consistency */
-        && element != head) /* check it's not deleting head */
-    {
+    if (element && element->next->prev == element->prev->next
+            && element->prev->next == element /* check consistency */
+            && element != head) /* check it's not deleting head */ {
+        if (opt_yield & DELETE_YIELD) {
+            sched_yield();
+        }
         return deleteMe(element);
     }
     else
         return 1;
 }
 
-//TODO: 2 more functions, add yield to all of them
 
 SortedListElement_t *SortedList_lookup(SortedList_t *list, const char *key) {
     SortedList_t* temp = list;
     if (list) {
         temp = list->next;
-        while (temp != list && strcmp(temp->key, key) != 0);
+        while (temp != list && strcmp(temp->key, key) != 0) {
+            if (opt_yield & LOOKUP_YIELD) {
+                sched_yield();
+            }
+            temp = temp->next;
+        }
     }
     if (temp == list) {
         return NULL;
@@ -102,6 +114,21 @@ SortedListElement_t *SortedList_lookup(SortedList_t *list, const char *key) {
     }
 }
 
+
 int SortedList_length(SortedList_t *list) {
-    return 0;
+    if (! list) return -1;
+
+    SortedList_t* temp = list;
+    SortedList_t* pre = list;
+    long long count = 1;
+    while (temp && temp->next != temp) {
+        if (opt_yield & LOOKUP_YIELD) {
+            sched_yield();
+        }
+        if (temp->key == NULL) 
+            count --;
+        temp = temp-> next;
+        count ++;
+    }
+    return count;
 }

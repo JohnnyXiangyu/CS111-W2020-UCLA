@@ -8,7 +8,7 @@
 
 extern pthread_mutex_t mutex;
 extern volatile int lock;
-extern SortedList_t* head;
+extern SortedList_t head;
 
 /* safe wrap of pthread_mutex_lock */
 int m_pthread_mutex_lock(pthread_mutex_t *__mutex) {
@@ -67,7 +67,7 @@ int deleteMe(SortedListElement_t* element) {
 
 void SortedList_insert(SortedList_t *list, SortedListElement_t *element) {
     SortedListElement_t* temp_node = list->next;
-    SortedListElement_t* pre = temp_node;
+    SortedListElement_t* pre = list;
     SortedListElement_t* nex = temp_node;
     while (temp_node != list && strcmp(element->key, temp_node->key) >= 0) {
         pre = temp_node;
@@ -84,7 +84,7 @@ void SortedList_insert(SortedList_t *list, SortedListElement_t *element) {
 int SortedList_delete( SortedListElement_t *element) {
     if (element && element->next->prev == element->prev->next
             && element->prev->next == element /* check consistency */
-            && element != head) /* check it's not deleting head */ {
+            && element != &head) /* check it's not deleting head */ {
         if (opt_yield & DELETE_YIELD) {
             sched_yield();
         }

@@ -76,6 +76,27 @@ int m_pthread_join(pthread_t __th, void **__thread_return) {
 }
 
 
+int m_pthread_mutex_lock(pthread_mutex_t *__mutex) {
+    int rc = pthread_mutex_lock(__mutex);
+    if (rc != 0) {
+        fprintf(stderr, "ERROR: pthread_mutex_lock() returned %d, exiting ...\n", rc);
+        exit(1);
+    }
+    else 
+        return rc;
+}
+
+int m_pthread_mutex_unlock(pthread_mutex_t *__mutex) {
+    int rc = pthread_mutex_unlock(__mutex);
+    if (rc != 0) {
+        fprintf(stderr, "ERROR: pthread_mutex_unlock() returned %d, exiting ...\n", rc);
+        exit(1);
+    }
+    else 
+        return rc;
+}
+
+
 void add(long long *pointer, long long value) {
     long long sum = *pointer + value;
     if (opt_yield)
@@ -97,10 +118,14 @@ void *unsafeRoutine(void *vargp) {
 void *mutexRoutine(void * vargp) {
     long long i = (long long) vargp;
     for (i = 0; i < num_itr; i++) {
+        m_pthread_mutex_lock(&mutex);
         add(&counter, 1);
+        m_pthread_mutex_unlock(&mutex);
     }
     for (i = 0; i < num_itr; i++) {
+        m_pthread_mutex_lock(&mutex);
         add(&counter, -1);
+        m_pthread_mutex_unlock(&mutex);
     }
     pthread_exit(0);
 }
@@ -193,9 +218,9 @@ int main(int argc, char **argv) {
     /* initialize synchronization options */
     if (sync) {
         switch (sync) {
-          case 'm':
+          case 'm': /* mutex */
             thread_routine = mutexRoutine;
-            
+            m_pthread_mutex_init(&mutex, NULL);
             break;
           case 's':
             thread_routine = spinRoutine;

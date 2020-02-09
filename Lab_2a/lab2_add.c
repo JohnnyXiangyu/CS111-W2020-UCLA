@@ -120,10 +120,10 @@ void spinLockAdd(long long *pointer, long long value) {
 }
 
 void atomAdd(long long *pointer, long long value) {
-    long long sum = *pointer + value;
-    if (opt_yield)
-        sched_yield();
-    *pointer = sum;
+    long long old;
+    do {
+        old = *pointer;
+    } while (__sync_val_compare_and_swap(pointer, old, old + value) != old);
 }
 
 void *threadRoutine(void *vargp) {
@@ -151,7 +151,6 @@ int main(int argc, char **argv) {
         {"debug", no_argument, 0, 'd'},
         {0, 0, 0, 0}
     };
-
     int temp = 0;
     while ((temp = getopt_long(argc, argv, "-", options, NULL)) != -1) {
         switch (temp) {

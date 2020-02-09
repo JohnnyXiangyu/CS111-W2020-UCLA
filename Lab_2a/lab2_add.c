@@ -134,10 +134,14 @@ void *mutexRoutine(void * vargp) {
 void *spinRoutine(void * vargp) {
     long long i = (long long) vargp;
     for (i = 0; i < num_itr; i++) {
+        while (__sync_lock_test_and_set(&spin_lock, 1));
         add(&counter, 1);
+        __sync_lock_release(&spin_lock);
     }
     for (i = 0; i < num_itr; i++) {
+        while (__sync_lock_test_and_set(&spin_lock, 1));
         add(&counter, -1);
+        __sync_lock_release(&spin_lock);
     }
     pthread_exit(0);
 }

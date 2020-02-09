@@ -29,6 +29,7 @@ done
 # for 5
 for i in 1 2 4 8 12
 do 
+    ./lab2_add --threads=$i --iterations=10000 >> lab2_add.csv
     ./lab2_add --threads=$i --iterations=10000 --sync=s >> lab2_add.csv
     ./lab2_add --threads=$i --iterations=10000 --sync=m >> lab2_add.csv
     ./lab2_add --threads=$i --iterations=10000 --sync=c >> lab2_add.csv

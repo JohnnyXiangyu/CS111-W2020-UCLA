@@ -99,8 +99,9 @@ int main(int argc, char **argv) {
 
     /* output */
     long ops = num_thr*num_itr*2;
-    long run_time = end_time.tv_nsec - start_time.tv_nsec;
-    printf("%s, %lld, %lld, %ld, %ld, %ld, %lld\n", test_name, num_thr, num_itr, ops, 
+    long long run_time = end_time.tv_nsec - start_time.tv_nsec;
+    run_time += (end_time.tv_sec - start_time.tv_sec) * 1000000000;
+    printf("%s, %lld, %lld, %ld, %lld, %lld, %lld\n", test_name, num_thr, num_itr, ops, 
           run_time, run_time / ops, counter);
 
     free(tid);

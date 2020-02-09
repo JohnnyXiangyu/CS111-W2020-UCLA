@@ -138,9 +138,19 @@ void* threadRoutine(void* vargp) {
     long long my_id = (long long) vargp;
     long long start = my_id * num_itr;
     long long end = (my_id + 1) * num_itr;
-
-    //TODO: not compelete
-    return NULL;
+    int i = 0;
+    for (i = start; i < end; i++) {
+        SortedList_insert(&head, &elements[i]);
+    }
+    SortedList_length(&head);
+    for (i = start; i < end; i++) {
+        SortedListElement_t* temp = SortedList_lookup(&head, keys[i]);
+        if (SortedList_delete(temp)) {
+            fprintf(stderr, "ERROR: SortedList_delete() return 1, exiting ...\n");
+            pthread_exit((void*) 1);
+        }
+    }
+    pthread_exit(0);
 }
 
 

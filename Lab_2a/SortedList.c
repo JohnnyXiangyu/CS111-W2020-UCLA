@@ -127,8 +127,12 @@ int SortedList_length(SortedList_t *list) {
         }
         if (temp->key == NULL) 
             count --;
+        pre = temp;
         temp = temp-> next;
         count ++;
+        /* check corruption */
+        if (!temp || temp->prev != pre)
+            return -1;
     }
     return count;
 }

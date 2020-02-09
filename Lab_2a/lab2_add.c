@@ -32,7 +32,7 @@ int m_clock_gettime(clockid_t id, struct timespec *tp) {
     int rc = 0;
     rc = clock_gettime(id, tp);
     if (rc != 0) {
-        fprintf(stderr, "ERROR: clock_gettime() return %d, exiting ...\n", rc);
+        fprintf(stderr, "ERROR: clock_gettime() return %d, exiting...\n", rc);
         exit(1);
     }
     else
@@ -43,7 +43,7 @@ int m_clock_gettime(clockid_t id, struct timespec *tp) {
 int m_pthread_mutex_init(pthread_mutex_t *__mutex, const pthread_mutexattr_t *__mutexattr) {
     int rc = pthread_mutex_init(__mutex, __mutexattr);
     if (rc != 0) {
-        fprintf(stderr, "ERROR: pthread_mutex_init() returned %d, exiting ...\n", rc);
+        fprintf(stderr, "ERROR: pthread_mutex_init() returned %d, exiting...\n", rc);
         exit(1);
     }
     else 
@@ -55,7 +55,7 @@ int m_pthread_create(pthread_t *__restrict__ __newthread, const pthread_attr_t *
                      void *(*__start_routine)(void *), void *__restrict__ __arg) {
     int rc = pthread_create(__newthread, __attr, __start_routine, __arg);
     if (rc != 0) {
-        fprintf(stderr, "ERROR: pthread_create() returned %d, exiting ...\n", rc);
+        fprintf(stderr, "ERROR: pthread_create() returned %d, exiting...\n", rc);
         exit(1);
     }
     else 
@@ -66,7 +66,7 @@ int m_pthread_create(pthread_t *__restrict__ __newthread, const pthread_attr_t *
 int m_pthread_join(pthread_t __th, void **__thread_return) {
     int rc = pthread_join(__th, __thread_return);
     if (rc != 0) {
-        fprintf(stderr, "ERROR: pthread_join() returned %d, exiting ...\n", rc);
+        fprintf(stderr, "ERROR: pthread_join() returned %d, exiting...\n", rc);
         exit(1);
     }
     else 
@@ -76,7 +76,7 @@ int m_pthread_join(pthread_t __th, void **__thread_return) {
 int m_pthread_mutex_lock(pthread_mutex_t *__mutex) {
     int rc = pthread_mutex_lock(__mutex);
     if (rc != 0) {
-        fprintf(stderr, "ERROR: pthread_mutex_lock() returned %d, exiting ...\n", rc);
+        fprintf(stderr, "ERROR: pthread_mutex_lock() returned %d, exiting...\n", rc);
         exit(1);
     }
     else 
@@ -86,7 +86,7 @@ int m_pthread_mutex_lock(pthread_mutex_t *__mutex) {
 int m_pthread_mutex_unlock(pthread_mutex_t *__mutex) {
     int rc = pthread_mutex_unlock(__mutex);
     if (rc != 0) {
-        fprintf(stderr, "ERROR: pthread_mutex_unlock() returned %d, exiting ...\n", rc);
+        fprintf(stderr, "ERROR: pthread_mutex_unlock() returned %d, exiting...\n", rc);
         exit(1);
     }
     else 
@@ -187,7 +187,7 @@ int main(int argc, char **argv) {
                     sync_type = "c";
                 }
                 else {
-                    fprintf(stderr, "unrecognized sync option provided, exiting ...\n");
+                    fprintf(stderr, "unrecognized sync option provided, exiting...\n");
                     exit(1);
                 }
             }

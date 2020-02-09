@@ -40,8 +40,8 @@ void add(long long *pointer, long long value) {
     *pointer = sum;
 }
 
-void *threadRoutine(void *vargp) {
-    long long i;
+void *unsafeRoutine(void *vargp) {
+    long long i = (long long) vargp;
     for (i = 0; i < num_itr; i++) {
         add(&counter, 1);
     }
@@ -51,8 +51,46 @@ void *threadRoutine(void *vargp) {
     pthread_exit(0);
 }
 
+void *mutexRoutine(void * vargp) {
+    long long i = (long long) vargp;
+    for (i = 0; i < num_itr; i++) {
+        add(&counter, 1);
+    }
+    for (i = 0; i < num_itr; i++) {
+        add(&counter, -1);
+    }
+    pthread_exit(0);
+}
+
+
+void *spinRoutine(void * vargp) {
+    long long i = (long long) vargp;
+    for (i = 0; i < num_itr; i++) {
+        add(&counter, 1);
+    }
+    for (i = 0; i < num_itr; i++) {
+        add(&counter, -1);
+    }
+    pthread_exit(0);
+}
+
+
+void *atomRoutine(void * vargp) {
+    long long i = (long long) vargp;
+    for (i = 0; i < num_itr; i++) {
+        add(&counter, 1);
+    }
+    for (i = 0; i < num_itr; i++) {
+        add(&counter, -1);
+    }
+    pthread_exit(0);
+}
+
+
 int main(int argc, char **argv) {
     static char* sync_type = "none";
+    void* (*thread_routine)(void*) = unsafeRoutine;
+
     // precess args using getopt
     struct option options[6] = {
         {"threads", required_argument, 0, 't'},
@@ -109,6 +147,21 @@ int main(int argc, char **argv) {
         }
     }
 
+    /* initialize synchronization options */
+    if (sync) {
+        switch (sync) {
+          case 'm':
+            thread_routine = mutexRoutine;
+            break;
+          case 's':
+            thread_routine = spinRoutine;
+            break;
+          case 'c':
+            thread_routine = atomRoutine;
+            break;
+        }
+    }
+
     /* note the start time of program (using real_time) */
     struct timespec start_time;
     m_clock_gettime(CLOCK_REALTIME, &start_time);
@@ -117,7 +170,7 @@ int main(int argc, char **argv) {
     pthread_t *tid = (pthread_t *)malloc(sizeof(pthread_t) * num_thr);
     long long i = 0;
     for (i = 0; i < num_thr; i++) {
-        pthread_create(&tid[i], NULL, threadRoutine, NULL);
+        pthread_create(&tid[i], NULL, thread_routine, NULL);
     }
     for (i = 0; i < num_thr; i++) {
         pthread_join(tid[i], NULL);

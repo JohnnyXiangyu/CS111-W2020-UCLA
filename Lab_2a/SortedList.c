@@ -121,7 +121,7 @@ int SortedList_length(SortedList_t *list) {
     SortedList_t* temp = list;
     SortedList_t* pre = list;
     long long count = 1;
-    while (temp && temp->next != temp) {
+    while (temp && temp->next != list) {
         if (opt_yield & LOOKUP_YIELD) {
             sched_yield();
         }

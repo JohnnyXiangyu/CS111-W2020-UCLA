@@ -11,9 +11,10 @@
 /* global variables */
 long long num_thr = 1;    /* number of threads */
 long long num_itr = 1;    /* number of iterations */
-long long num_elements = 0;;
+long long num_elements = 0;
+int opt_yield;
 int debug_flag = 0; /* flag debug mode */
-extern int opt_yield;
+static char* yield_arg_str = "";
 static char* yield_type = "none";
 static char* sync_type = "none";
 
@@ -53,16 +54,16 @@ int m_clock_gettime(clockid_t id, struct timespec *tp) {
         return rc;
 }
 
-/* safe wrap of pthread_mutex_init */
-int m_pthread_mutex_init(pthread_mutex_t *__mutex, const pthread_mutexattr_t *__mutexattr) {
-    int rc = pthread_mutex_init(__mutex, __mutexattr);
-    if (rc != 0) {
-        fprintf(stderr, "ERROR: pthread_mutex_init() returned %d, exiting ...\n", rc);
-        exit(1);
-    }
-    else 
-        return rc;
-}
+// /* safe wrap of pthread_mutex_init */
+// int m_pthread_mutex_init(pthread_mutex_t *__mutex, const pthread_mutexattr_t *__mutexattr) {
+//     int rc = pthread_mutex_init(__mutex, __mutexattr);
+//     if (rc != 0) {
+//         fprintf(stderr, "ERROR: pthread_mutex_init() returned %d, exiting ...\n", rc);
+//         exit(1);
+//     }
+//     else 
+//         return rc;
+// }
 
 /* safe wrap of pthread_create */
 int m_pthread_create(pthread_t *__restrict__ __newthread, const pthread_attr_t *__restrict__ __attr, 
@@ -87,43 +88,45 @@ int m_pthread_join(pthread_t __th, void **__thread_return) {
         return rc;
 }
 
-/* safe wrap of pthread_mutex_lock */
-int m_pthread_mutex_lock(pthread_mutex_t *__mutex) {
-    int rc = pthread_mutex_lock(__mutex);
-    if (rc != 0) {
-        fprintf(stderr, "ERROR: pthread_mutex_lock() returned %d, exiting ...\n", rc);
-        exit(1);
-    }
-    else 
-        return rc;
-}
+// /* safe wrap of pthread_mutex_lock */
+// int m_pthread_mutex_lock(pthread_mutex_t *__mutex) {
+//     int rc = pthread_mutex_lock(__mutex);
+//     if (rc != 0) {
+//         fprintf(stderr, "ERROR: pthread_mutex_lock() returned %d, exiting ...\n", rc);
+//         exit(1);
+//     }
+//     else 
+//         return rc;
+// }
 
-/* safe wrap of pthread_mutex_unlock */
-int m_pthread_mutex_unlock(pthread_mutex_t *__mutex) {
-    int rc = pthread_mutex_unlock(__mutex);
-    if (rc != 0) {
-        fprintf(stderr, "ERROR: pthread_mutex_unlock() returned %d, exiting ...\n", rc);
-        exit(1);
-    }
-    else 
-        return rc;
-}
+// /* safe wrap of pthread_mutex_unlock */
+// int m_pthread_mutex_unlock(pthread_mutex_t *__mutex) {
+//     int rc = pthread_mutex_unlock(__mutex);
+//     if (rc != 0) {
+//         fprintf(stderr, "ERROR: pthread_mutex_unlock() returned %d, exiting ...\n", rc);
+//         exit(1);
+//     }
+//     else 
+//         return rc;
+// }
 
 
 /* free all allocated memory: please only call after everything is setup */
 void* m_free() {
     int i;
     for (i = 0; i < num_elements; i++) {
-        free(elements[i].key); /* keys */
+        char* temp = elements[i].key;
+        free(temp); /* keys */
     }
     free(elements); /* all nodes */
     free(tid); /* all threads */
+    return 0;
 }
 
 
 /* segfault handler */
-void* memoryFucked() {
-    fprint(stderr, "f**k, there's segfault!\n");
+void memoryFucked(int arg) {
+    fprintf(stderr, "f**k, there's segfault!\n");
     m_free();
     exit(0);
 }
@@ -131,18 +134,19 @@ void* memoryFucked() {
 
 /* thread routine */
 void* threadRoutine(void* vargp) {
-    long long my_id = (int) vargp;
+    long long my_id = (long long) vargp;
     long long start = my_id * num_itr;
     long long end = (my_id + 1) * num_itr;
 
     //TODO: not compelete
-
+    return NULL;
 }
 
 
 int main(int argc, char **argv) {
     long long i, j; /* variable names reserved for looping */
     static char* sync_type = "none";
+    opt_yield = 0;
 
     // precess args using getopt
     struct option options[5] = {
@@ -169,26 +173,32 @@ int main(int argc, char **argv) {
             debug_flag = 1;
             break;
           case 'y':
-            int i = 0; char temp = 0;
-            while (temp == '\0' && i != 0) {
-                temp = ((char*) optarg)[i];
-                switch (temp) {
-                  case 'i':
-                    opt_yield = opt_yield | INSERT_YIELD;
-                    break;
-                  case 'd':
-                    opt_yield = opt_yield | DELETE_YIELD;
-                    break;
-                  case 'l':
-                    opt_yield = opt_yield | LOOKUP_YIELD;
-                    break;
-                }
-            }
+            opt_yield = -1;
+            yield_arg_str = optarg;
             break;
           case '?':
             fprintf(stderr, "%s\r\n", error_message);
             exit(1);
             break;
+        }
+    }
+
+    if (opt_yield) {
+        opt_yield = 0;
+        char temp = 0; i = 0;
+        while (temp != '\0' || i == 0) {
+            temp = ((char*) yield_arg_str)[i];
+            switch (temp) {
+                case 'i':
+                opt_yield = opt_yield | INSERT_YIELD;
+                break;
+                case 'd':
+                opt_yield = opt_yield | DELETE_YIELD;
+                break;
+                case 'l':
+                opt_yield = opt_yield | LOOKUP_YIELD;
+                break;
+            }
         }
     }
 
@@ -249,7 +259,7 @@ int main(int argc, char **argv) {
     }
     /* join */
     for (i = 0; i < num_thr; i++) {
-        m_pthread_join(&tid[i], NULL);
+        m_pthread_join(tid[i], NULL);
     }
 
     /* take end time */
@@ -257,7 +267,7 @@ int main(int argc, char **argv) {
     m_clock_gettime(CLOCK_REALTIME, &end_time);
 
     /* report */ // TODO
-    long ops = num_thr * num_itr * 3;
+    long long ops = num_thr * num_itr * 3;
     long long run_time = end_time.tv_nsec - start_time.tv_nsec;
     run_time += (end_time.tv_sec - start_time.tv_sec) * 1000000000;
     printf("list-%s-%s,%lld,%lld,1,%lld,%lld,%lld\n", yield_type, sync_type, num_thr, num_itr, 

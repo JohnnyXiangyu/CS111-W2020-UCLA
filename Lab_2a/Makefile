@@ -11,10 +11,15 @@ graphs: lab2_add.csv
 
 lab2_add.csv: tests
 
+lab2_list.csv: tests
+
 dist:
 
 lab2_add: lab2_add.c
 	$(cc) lab2_add.c -o lab2_add $(flags)
+
+lab2_list: lab2_list.c SortedList.h SortedList.c 
+	$(cc) lab2_list.c SortedList.c -o lab2_list $(flags)
 
 clean:
 	rm -f lab2_add

@@ -87,3 +87,21 @@ int SortedList_delete( SortedListElement_t *element) {
 }
 
 //TODO: 2 more functions, add yield to all of them
+
+SortedListElement_t *SortedList_lookup(SortedList_t *list, const char *key) {
+    SortedList_t* temp = list;
+    if (list) {
+        temp = list->next;
+        while (temp != list && strcmp(temp->key, key) != 0);
+    }
+    if (temp == list) {
+        return NULL;
+    }
+    else {
+        return temp;
+    }
+}
+
+int SortedList_length(SortedList_t *list) {
+    return 0;
+}

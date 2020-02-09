@@ -15,6 +15,10 @@ int debug_flag = 0; /* flag debug mode */
 int opt_yield = 0; /* flag yield */
 char sync = 0;
 
+/* global locks */
+pthread_mutex_t mutex;
+volatile int spin_lock = 0;
+
 /* option error message */
 static char *error_message =
     "usage\n  --threads=# number of threads to run\n"
@@ -22,16 +26,55 @@ static char *error_message =
     "  --debug activate debug mode";
 
 
+/* safe wrap of clock_gettime */
 int m_clock_gettime(clockid_t id, struct timespec *tp) {
     int rc = 0;
     rc = clock_gettime(id, tp);
     if (rc != 0) {
-        fprintf(stderr, "clock_gettime() return non-zero, exiting ...\n");
+        fprintf(stderr, "ERROR: clock_gettime() return %d, exiting ...\n", rc);
         exit(1);
     }
     else
         return rc;
 }
+
+
+/* safe wrap of pthread_mutex_init */
+int m_pthread_mutex_init(pthread_mutex_t *__mutex, const pthread_mutexattr_t *__mutexattr) {
+    int rc = pthread_mutex_init(__mutex, __mutexattr);
+    if (rc != 0) {
+        fprintf(stderr, "ERROR: pthread_mutex_init() returned %d, exiting ...\n", rc);
+        exit(1);
+    }
+    else 
+        return rc;
+}
+
+
+/* safe wrap of pthread_create */
+int m_pthread_create(pthread_t *__restrict__ __newthread, const pthread_attr_t *__restrict__ __attr, 
+                     void *(*__start_routine)(void *), void *__restrict__ __arg) {
+    int rc = pthread_create(__newthread, __attr, __start_routine, __arg);
+    if (rc != 0) {
+        fprintf(stderr, "ERROR: pthread_create() returned %d, exiting ...\n", rc);
+        exit(1);
+    }
+    else 
+        return rc;
+}
+
+
+/* safe wrap of pthread_join */
+int m_pthread_join(pthread_t __th, void **__thread_return) {
+    int rc = pthread_join(__th, __thread_return);
+    if (rc != 0) {
+        fprintf(stderr, "ERROR: pthread_join() returned %d, exiting ...\n", rc);
+        exit(1);
+    }
+    else 
+        return rc;
+}
+
 
 void add(long long *pointer, long long value) {
     long long sum = *pointer + value;
@@ -152,6 +195,7 @@ int main(int argc, char **argv) {
         switch (sync) {
           case 'm':
             thread_routine = mutexRoutine;
+            
             break;
           case 's':
             thread_routine = spinRoutine;
@@ -170,7 +214,7 @@ int main(int argc, char **argv) {
     pthread_t *tid = (pthread_t *)malloc(sizeof(pthread_t) * num_thr);
     long long i = 0;
     for (i = 0; i < num_thr; i++) {
-        pthread_create(&tid[i], NULL, thread_routine, NULL);
+        m_pthread_create(&tid[i], NULL, thread_routine, NULL);
     }
     for (i = 0; i < num_thr; i++) {
         pthread_join(tid[i], NULL);

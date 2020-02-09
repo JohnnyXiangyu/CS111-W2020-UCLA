@@ -123,6 +123,8 @@ void atomAdd(long long *pointer, long long value) {
     long long old;
     do {
         old = *pointer;
+        if (opt_yield)
+            sched_yield();
     } while (__sync_val_compare_and_swap(pointer, old, old + value) != old);
 }
 

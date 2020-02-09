@@ -11,6 +11,7 @@ long long counter = 0;
 long long num_thr = 1;    /* number of threads */
 long long num_itr = 1;    /* number of iterations */
 int debug_flag = 0; /* flag debug mode */
+int opt_yield = 0; /* flag yield */
 static char* test_name = "add-none";
 
 /* option error message */
@@ -33,6 +34,8 @@ int m_clock_gettime(clockid_t id, struct timespec *tp) {
 
 void add(long long *pointer, long long value) {
     long long sum = *pointer + value;
+    if (opt_yield)
+        sched_yield();
     *pointer = sum;
 }
 
@@ -52,6 +55,7 @@ int main(int argc, char **argv) {
     struct option options[5] = {
         {"threads", required_argument, 0, 't'},
         {"iterations", required_argument, 0, 'i'},
+        {"yield", no_argument, 0, 'y'},
         {"debug", no_argument, 0, 'd'},
         {0, 0, 0, 0}
     };
@@ -63,16 +67,20 @@ int main(int argc, char **argv) {
             fprintf(stderr, "Bad non-option argument: %s\n%s\n", argv[optind - 1], error_message);
             exit(1);
             break;
-        case 't': // --threads=#
+          case 't': // --threads=#
             num_thr = atoi(optarg);
             break;
-        case 'i': // --iterations=#
+          case 'i': // --iterations=#
             num_itr = atoi(optarg);
             break;
-        case 'd': // --debug
+          case 'd': // --debug
             debug_flag = 1;
             break;
-        case '?':
+          case 'y':
+            opt_yield = 1;
+            test_name = "add-yield-none";
+            break;
+          case '?':
             fprintf(stderr, "%s\r\n", error_message);
             exit(1);
             break;

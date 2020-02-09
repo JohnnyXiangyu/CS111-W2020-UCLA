@@ -104,10 +104,10 @@ void add(long long *pointer, long long value) {
 void mutexAdd(long long *pointer, long long value) {
     m_pthread_mutex_lock(&mutex);
     long long sum = *pointer + value;
-    m_pthread_mutex_unlock(&mutex);
     if (opt_yield)
         sched_yield();
     *pointer = sum;
+    m_pthread_mutex_unlock(&mutex);
 }
 
 void spinLockAdd(long long *pointer, long long value) {

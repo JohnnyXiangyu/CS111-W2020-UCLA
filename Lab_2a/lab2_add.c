@@ -8,8 +8,8 @@
 long long counter = 0;
 
 /* global variables */
-int num_thr = 1;    /* number of threads */
-int num_itr = 1;    /* number of iterations */
+long long num_thr = 1;    /* number of threads */
+long long num_itr = 1;    /* number of iterations */
 int debug_flag = 0; /* flag debug mode */
 static char* test_name = "add-none";
 
@@ -37,7 +37,7 @@ void add(long long *pointer, long long value) {
 }
 
 void *threadRoutine(void *vargp) {
-    int i;
+    long long i;
     for (i = 0; i < num_itr; i++) {
         add(&counter, 1);
     }
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
 
     /* start some threads */
     pthread_t *tid = (pthread_t *)malloc(sizeof(pthread_t) * num_thr);
-    int i = 0;
+    long long i = 0;
     for (i = 0; i < num_thr; i++) {
         pthread_create(&tid[i], NULL, threadRoutine, NULL);
     }
@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
     /* output */
     long ops = num_thr*num_itr*2;
     long run_time = end_time.tv_nsec - start_time.tv_nsec;
-    printf("%s, %d, %d, %ld, %ld, %ld, %lld\n", test_name, num_thr, num_itr, ops, 
+    printf("%s, %lld, %lld, %ld, %ld, %ld, %lld\n", test_name, num_thr, num_itr, ops, 
           run_time, run_time / ops, counter);
 
     free(tid);

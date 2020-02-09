@@ -3,9 +3,13 @@ flags=-g -Wall -Wextra -lpthread
 
 build: lab2_add
 
-tests:
+tests: lab2_add
+	bash add_tests.sh
 
-graphs:
+graphs: lab2_add.csv
+	gnuplot lab2_add.gp
+
+lab2_add.csv: tests
 
 dist:
 

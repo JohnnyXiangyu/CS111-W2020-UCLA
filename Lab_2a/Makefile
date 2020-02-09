@@ -1,7 +1,7 @@
 cc=gcc
 flags=-g -Wall -Wextra -lpthread
 
-build: lab2_add
+build: lab2_add lab2_list
 
 tests: lab2_add
 	bash add_tests.sh

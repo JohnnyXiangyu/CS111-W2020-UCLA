@@ -20,6 +20,7 @@ static char* sync_type = "none";
 
 SortedList_t head; /* head node */
 SortedListElement_t* elements; /* all elements */
+char** keys; /* all keys (used for deletion) */
 pthread_t* tid = NULL; /* threads */
 
 pthread_mutex_t mutex; /* shared mutex */
@@ -115,9 +116,9 @@ int m_pthread_join(pthread_t __th, void **__thread_return) {
 void* m_free() {
     int i;
     for (i = 0; i < num_elements; i++) {
-        char* temp = elements[i].key;
-        free(temp); /* keys */
+        free(keys[i]); /* keys */
     }
+    free(keys);
     free(elements); /* all nodes */
     free(tid); /* all threads */
     return 0;
@@ -126,7 +127,7 @@ void* m_free() {
 
 /* segfault handler */
 void memoryFucked(int arg) {
-    fprintf(stderr, "f**k, there's segfault!\n");
+    fprintf(stderr, "f**k, there's segfault: %d\n", arg);
     m_free();
     exit(0);
 }
@@ -144,11 +145,10 @@ void* threadRoutine(void* vargp) {
 
 
 int main(int argc, char **argv) {
-    long long i, j; /* variable names reserved for looping */
-    static char* sync_type = "none";
+    long long i; /* variable names reserved for looping */
     opt_yield = 0;
 
-    // precess args using getopt
+    /* precess args */
     struct option options[5] = {
         {"threads", required_argument, 0, 't'},
         {"iterations", required_argument, 0, 'i'},
@@ -183,6 +183,7 @@ int main(int argc, char **argv) {
         }
     }
 
+    /* construct opt_yield bit mask */
     if (opt_yield) {
         opt_yield = 0;
         char temp = 0; i = 0;
@@ -233,19 +234,22 @@ int main(int argc, char **argv) {
     head.next = &head;
     head.prev = &head;
     head.key = NULL;
-    /* initialize all elements */
+
+    /* allocate all elements */
     elements = (SortedListElement_t*) m_malloc(sizeof(SortedListElement_t) * num_elements);
+    keys = (char**) malloc(sizeof(char*) * num_elements);
     for (i = 0; i < num_elements; i++) {
         /* give each element a key */
-        char* new_string = (char*) m_malloc(sizeof(char) * 256);
+        keys[i] = (char*) m_malloc(sizeof(char) * 256);
         int j;
         for (j = 0; j < 256; j++) {
-            new_string[j] = rand() % 94 + 33;
+            keys[i][j] = rand() % 94 + 33;
         }
-        elements[i].key = new_string;
+        elements[i].key = keys[i];
     }
 
-    signal(SIGSEGV, memoryFucked); /* deal with segfault */
+    /* deal with segfault */
+    signal(SIGSEGV, memoryFucked);
 
     /* take start time */
     struct timespec start_time;

@@ -3,6 +3,7 @@
 #include <getopt.h>
 #include <pthread.h>
 #include <time.h>
+#include <string.h>
 
 /* muti-threading objective variable */
 long long counter = 0;
@@ -12,7 +13,7 @@ long long num_thr = 1;    /* number of threads */
 long long num_itr = 1;    /* number of iterations */
 int debug_flag = 0; /* flag debug mode */
 int opt_yield = 0; /* flag yield */
-static char* test_name = "add-none";
+char sync = 0;
 
 /* option error message */
 static char *error_message =
@@ -51,11 +52,13 @@ void *threadRoutine(void *vargp) {
 }
 
 int main(int argc, char **argv) {
+    static char* sync_type = "none";
     // precess args using getopt
-    struct option options[5] = {
+    struct option options[6] = {
         {"threads", required_argument, 0, 't'},
         {"iterations", required_argument, 0, 'i'},
         {"yield", no_argument, 0, 'y'},
+        {"sync", required_argument, 0, 's'},
         {"debug", no_argument, 0, 'd'},
         {0, 0, 0, 0}
     };
@@ -78,7 +81,26 @@ int main(int argc, char **argv) {
             break;
           case 'y':
             opt_yield = 1;
-            test_name = "add-yield-none";
+            break;
+          case 's':
+            if (optarg) {
+                if (strcmp(optarg, "m") == 0) {
+                    sync = 'm';
+                    sync_type = "m";
+                }
+                else if (strcmp(optarg, "s") == 0) {
+                    sync = 's';
+                    sync_type = "s";
+                }
+                else if (strcmp(optarg, "c") == 0) {
+                    sync = 'c';
+                    sync_type = "c";
+                }
+                else {
+                    fprintf(stderr, "unrecognized sync option provided, exiting ...\n");
+                    exit(1);
+                }
+            }
             break;
           case '?':
             fprintf(stderr, "%s\r\n", error_message);
@@ -109,8 +131,14 @@ int main(int argc, char **argv) {
     long ops = num_thr*num_itr*2;
     long long run_time = end_time.tv_nsec - start_time.tv_nsec;
     run_time += (end_time.tv_sec - start_time.tv_sec) * 1000000000;
-    printf("%s,%lld,%lld,%ld,%lld,%lld,%lld\n", test_name, num_thr, num_itr, ops, 
-          run_time, run_time / ops, counter);
+    if (opt_yield) {
+        printf("add-yield-%s,%lld,%lld,%ld,%lld,%lld,%lld\n", sync_type, num_thr, num_itr, ops, 
+              run_time, run_time / ops, counter);
+    }
+    else {
+        printf("add-%s,%lld,%lld,%ld,%lld,%lld,%lld\n", sync_type, num_thr, num_itr, ops, 
+              run_time, run_time / ops, counter);
+    }
 
     free(tid);
 }

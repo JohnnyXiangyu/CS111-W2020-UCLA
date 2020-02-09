@@ -13,5 +13,7 @@ lab2_add: lab2_add.c
 	$(cc) lab2_add.c -o lab2_add $(flags)
 
 clean:
-	rm lab2_add
-	
+	rm -f lab2_add
+	rm -f lab2_list
+	rm -f *.png
+	rm -f *.csv

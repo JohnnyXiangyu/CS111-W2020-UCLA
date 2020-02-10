@@ -6,43 +6,7 @@
 #include <string.h>
 #include "SortedList.h"
 
-extern pthread_mutex_t mutex;
-extern volatile int lock;
 extern SortedList_t head;
-
-/* safe wrap of pthread_mutex_lock */
-int m_pthread_mutex_lock(pthread_mutex_t *__mutex) {
-    int rc = pthread_mutex_lock(__mutex);
-    if (rc != 0) {
-        fprintf(stderr, "ERROR: pthread_mutex_lock() returned %d, exiting ...\n", rc);
-        exit(1);
-    }
-    else 
-        return rc;
-}
-
-/* safe wrap of pthread_mutex_unlock */
-int m_pthread_mutex_unlock(pthread_mutex_t *__mutex) {
-    int rc = pthread_mutex_unlock(__mutex);
-    if (rc != 0) {
-        fprintf(stderr, "ERROR: pthread_mutex_unlock() returned %d, exiting ...\n", rc);
-        exit(1);
-    }
-    else 
-        return rc;
-}
-
-/* safe wrap of pthread_mutex_init */
-int m_pthread_mutex_init(pthread_mutex_t *__mutex, const pthread_mutexattr_t *__mutexattr) {
-    int rc = pthread_mutex_init(__mutex, __mutexattr);
-    if (rc != 0) {
-        fprintf(stderr, "ERROR: pthread_mutex_init() returned %d, exiting ...\n", rc);
-        exit(1);
-    }
-    else 
-        return rc;
-}
-
 
 /* insert a node with previous and next give */
 int insertBetween(SortedListElement_t* pre, SortedListElement_t* nex, SortedListElement_t* new) {

@@ -12,10 +12,11 @@
 long long num_thr = 1;    /* number of threads */
 long long num_itr = 1;    /* number of iterations */
 long long num_elements = 0;
-int opt_yield;
 int debug_flag = 0; /* flag debug mode */
+int opt_yield;
 static char* yield_arg_str = "";
 static char* yield_type = "none";
+char sync = 0;
 static char* sync_type = "none";
 
 SortedList_t head; /* head node */
@@ -24,7 +25,7 @@ char** keys; /* all keys (used for deletion) */
 pthread_t* tid = NULL; /* threads */
 
 pthread_mutex_t mutex; /* shared mutex */
-volatile int lock = 0; /* shared spin lock */
+volatile int spin_lock = 0; /* shared spin lock */
 
 /* option error message */
 static char *error_message =
@@ -55,16 +56,6 @@ int m_clock_gettime(clockid_t id, struct timespec *tp) {
         return rc;
 }
 
-// /* safe wrap of pthread_mutex_init */
-// int m_pthread_mutex_init(pthread_mutex_t *__mutex, const pthread_mutexattr_t *__mutexattr) {
-//     int rc = pthread_mutex_init(__mutex, __mutexattr);
-//     if (rc != 0) {
-//         fprintf(stderr, "ERROR: pthread_mutex_init() returned %d, exiting...\n", rc);
-//         exit(1);
-//     }
-//     else 
-//         return rc;
-// }
 
 /* safe wrap of pthread_create */
 int m_pthread_create(pthread_t *__restrict__ __newthread, const pthread_attr_t *__restrict__ __attr, 
@@ -89,28 +80,38 @@ int m_pthread_join(pthread_t __th, void **__thread_return) {
         return rc;
 }
 
-// /* safe wrap of pthread_mutex_lock */
-// int m_pthread_mutex_lock(pthread_mutex_t *__mutex) {
-//     int rc = pthread_mutex_lock(__mutex);
-//     if (rc != 0) {
-//         fprintf(stderr, "ERROR: pthread_mutex_lock() returned %d, exiting...\n", rc);
-//         exit(1);
-//     }
-//     else 
-//         return rc;
-// }
+/* safe wrap of pthread_mutex_lock */
+int m_pthread_mutex_lock(pthread_mutex_t *__mutex) {
+    int rc = pthread_mutex_lock(__mutex);
+    if (rc != 0) {
+        fprintf(stderr, "ERROR: pthread_mutex_lock() returned %d, exiting ...\n", rc);
+        exit(1);
+    }
+    else 
+        return rc;
+}
 
-// /* safe wrap of pthread_mutex_unlock */
-// int m_pthread_mutex_unlock(pthread_mutex_t *__mutex) {
-//     int rc = pthread_mutex_unlock(__mutex);
-//     if (rc != 0) {
-//         fprintf(stderr, "ERROR: pthread_mutex_unlock() returned %d, exiting...\n", rc);
-//         exit(1);
-//     }
-//     else 
-//         return rc;
-// }
+/* safe wrap of pthread_mutex_unlock */
+int m_pthread_mutex_unlock(pthread_mutex_t *__mutex) {
+    int rc = pthread_mutex_unlock(__mutex);
+    if (rc != 0) {
+        fprintf(stderr, "ERROR: pthread_mutex_unlock() returned %d, exiting ...\n", rc);
+        exit(1);
+    }
+    else 
+        return rc;
+}
 
+/* safe wrap of pthread_mutex_init */
+int m_pthread_mutex_init(pthread_mutex_t *__mutex, const pthread_mutexattr_t *__mutexattr) {
+    int rc = pthread_mutex_init(__mutex, __mutexattr);
+    if (rc != 0) {
+        fprintf(stderr, "ERROR: pthread_mutex_init() returned %d, exiting ...\n", rc);
+        exit(1);
+    }
+    else 
+        return rc;
+}
 
 /* free all allocated memory: please only call after everything is setup */
 void* m_free() {
@@ -150,20 +151,37 @@ void* threadRoutine(void* vargp) {
     long long start = my_id * num_itr;
     long long end = (my_id + 1) * num_itr;
     int i = 0;
+    /* lock up */
+    if (sync == 'm') {
+        m_pthread_mutex_lock(&mutex);
+    }
+    else if (sync == 's') {
+        while (__sync_lock_test_and_set(&spin_lock, 1));
+    }
+
     for (i = start; i < end; i++) {
         SortedList_insert(&head, &elements[i]);
     }
     if (debug_flag) { printList(); }
     if (SortedList_length(&head) == -1) {
         fprintf(stderr, "ERROR: SortedList_length() return -1, exiting...\n");
-        pthread_exit((void*) 1);
+        exit(2);
     }
+
     for (i = start; i < end; i++) {
         SortedListElement_t* temp = SortedList_lookup(&head, keys[i]);
         if (SortedList_delete(temp)) {
             fprintf(stderr, "ERROR: SortedList_delete() return 1, exiting...\n");
-            pthread_exit((void*) 1);
+            exit(2);
         }
+    }
+
+    /* free */
+    if (sync == 'm') {
+        m_pthread_mutex_unlock(&mutex);
+    }
+    else if (sync == 's') {
+        __sync_lock_release(&spin_lock);
     }
     pthread_exit(0);
 }
@@ -174,11 +192,12 @@ int main(int argc, char **argv) {
     opt_yield = 0;
 
     /* precess args */
-    struct option options[5] = {
+    struct option options[6] = {
         {"threads", required_argument, 0, 't'},
         {"iterations", required_argument, 0, 'i'},
         {"yield", required_argument, 0, 'y'},
         {"debug", no_argument, 0, 'd'},
+        {"sync", required_argument, 0, 's'},
         {0, 0, 0, 0}
     };
     int temp = 0;
@@ -201,11 +220,29 @@ int main(int argc, char **argv) {
             opt_yield = -1;
             yield_arg_str = optarg;
             break;
+          case 's':
+            if (strcmp("m", optarg) == 0) {
+                sync = 'm';
+                sync_type = "m";
+            }
+            else if (strcmp("s", optarg) == 0) {
+                sync = 's';
+                sync_type = "s";
+            }
+            else {
+                fprintf(stderr, "ERROR: unrecognized sync option %s provided, exiting...\n", optarg);
+                exit(1);
+            }
+            break;
           case '?':
             fprintf(stderr, "%s\r\n", error_message);
             exit(1);
             break;
         }
+    }
+
+    if (sync == 'c') {
+        m_pthread_mutex_init(&mutex, NULL);
     }
 
     /* construct opt_yield bit mask */

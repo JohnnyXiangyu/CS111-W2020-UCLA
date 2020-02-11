@@ -5,3 +5,4 @@ lab2_list
 *.png
 *.csv
 functions.sh
+*.log

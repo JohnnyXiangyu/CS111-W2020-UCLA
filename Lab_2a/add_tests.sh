@@ -22,6 +22,7 @@ done
 
 # for 3
 for j in 1 2 4
+do
     for i in 100 1000 10000 100000 1000000
     do
         ./lab2_add --threads=$j --iterations=$i >> lab2_add.csv

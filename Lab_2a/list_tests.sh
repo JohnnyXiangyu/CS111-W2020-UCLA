@@ -39,9 +39,8 @@ done
 ./lab2_list --threads=12 --iterations=32 --yield=dl --sync=m>> lab2_list.csv
 
 # for 4
-for i in 1 2 4 8 12 16 24
+for i in 1 2 4 8
 do 
     ./lab2_list --threads=$i --iterations=1000 --sync=s>> lab2_list.csv
     ./lab2_list --threads=$i --iterations=1000 --sync=m>> lab2_list.csv
 done
-

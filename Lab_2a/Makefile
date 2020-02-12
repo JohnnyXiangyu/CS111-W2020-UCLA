@@ -32,6 +32,10 @@ dist: lab2_add.c SortedList.h SortedList.c lab2_list.c Makefile tests graphs lis
 clean:
 	rm -f lab2_add
 	rm -f lab2_list
-	rm -f *.png
-	rm -f *.csv
 	rm -f lab2a-805061659.tar.gz
+
+dclean:
+	rm -f *.csv
+	rm -f *.png
+
+fclean: dclean clean

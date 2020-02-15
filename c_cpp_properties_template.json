@@ -1,0 +1,12 @@
+{
+    "configurations": [
+        {
+            "name": "WSL-C",
+            "defines": [
+                "_GNU_SOURCE"
+            ],
+            "compilerPath": "/usr/bin/gcc"
+        }
+    ],
+    "version": 4
+}

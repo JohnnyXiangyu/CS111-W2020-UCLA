@@ -6,8 +6,7 @@ build: lab2_add lab2_list
 tests: lab2_add.csv lab2_list.csv
 
 graphs: lab2_add.csv lab2_list.csv
-	gnuplot lab2_add.gp
-	gnuplot lab2_list.gp
+	gnuplot lab2b.gp
 
 lab2_add.csv: add_tests.sh lab2_add
 	bash add_tests.sh

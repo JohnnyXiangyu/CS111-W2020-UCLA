@@ -8,3 +8,7 @@ All projects have been done with WSL and VSCode.
 Porject 0: Warmup  
 Project 1a: Terminal I/O and Inter-Process Communication  
 Project 1b: Compressed Network Communication  
+
+## Notes
+
+for project 2, need to add "_GNU_SOURCE" in "defines" field of c_cpp_properties.json to properly include header files  

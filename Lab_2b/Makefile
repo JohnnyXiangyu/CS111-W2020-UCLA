@@ -26,12 +26,13 @@ clean:
 dclean:
 	rm -f *.csv
 	rm -f *.png
+	rm -f *.prof
 
 fclean: dclean clean
 
 profile: build
-	rm -f ./temp.prof profile.out
+	rm -f ./temp.prof lab2b.prof
 	LD_PRELOAD=libprofiler.so.0 CPUPROFILE=./temp.prof ./lab2_list --threads=12 --iterations=1000 --sync=s
-	pprof --text ./lab2_list ./temp.prof > lab2b_profile
-	pprof --list=threadRoutine ./lab2_list ./temp.prof >> lab2b_profile
+	pprof --text ./lab2_list ./temp.prof > lab2b.prof
+	pprof --list=threadRoutine ./lab2_list ./temp.prof >> lab2b.prof
 	rm -f ./temp.prof lab2_list

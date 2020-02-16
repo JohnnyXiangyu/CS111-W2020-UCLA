@@ -6,3 +6,4 @@ lab2_list
 *.csv
 functions.sh
 *.log
+libprofiler.so.0

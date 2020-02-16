@@ -12,12 +12,17 @@ graphs: tests
 lab2_list: lab2_list.c SortedList.h SortedList.c 
 	$(cc) lab2_list.c SortedList.c -o lab2_list $(flags)
 
-dist: profile Makefile graphs lab2b_tests README
-	tar -czvf lab2b-805061659.tar.gz lab2_list.c \
-	SortedList.h SortedList.c Makefile lab2_list.csv \
-	lab2b_list-1.png lab2b_list-2.png lab2b_list-3.png \
-	lab2b_list-4.png README lab2b.gp \
-	lab2b_tests.sh profile.out
+dist: profile Makefile graphs README
+	tar -czvf lab2b-805061659.tar.gz SortedList.h SortedList.c lab2_list.c\
+	Makefile\
+	lab2b_list.csv profile.out\
+	lab2b_1.png\
+	lab2b_1.png\
+	lab2b_1.png\
+	lab2b_1.png\
+	lab2b_1.png\
+	README\
+	lab2b_tests.sh lab2b.gp
 
 clean:
 	rm -f lab2_list

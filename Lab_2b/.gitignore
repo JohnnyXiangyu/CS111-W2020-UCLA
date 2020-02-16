@@ -8,3 +8,4 @@ functions.sh
 *.log
 libprofiler.so.0
 *.prof
+*.out

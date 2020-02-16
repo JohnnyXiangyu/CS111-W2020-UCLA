@@ -7,3 +7,4 @@ lab2_list
 functions.sh
 *.log
 libprofiler.so.0
+*.prof

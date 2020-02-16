@@ -13,7 +13,7 @@ long long num_thr = 1;    /* number of threads */
 long long num_itr = 1;    /* number of iterations */
 long long num_elements = 0;
 int debug_flag = 0; /* flag debug mode */
-int opt_yield;
+int opt_yield; /* yield options */
 static char* yield_arg_str = "";
 static char* yield_type = "none";
 char sync = 0;
@@ -26,6 +26,12 @@ pthread_t* tid = NULL; /* threads */
 
 pthread_mutex_t mutex; /* shared mutex */
 volatile int spin_lock = 0; /* shared spin lock */
+
+long long* lock_ops_arr = NULL; /* array, # lock operation happened in each thread */
+long long* lock_time_arr = NULL; /* array, nanoseconds spent on waiting mutex for each thread */
+
+long long total_lock_ops = 0; /* int, count of lock ops for final report */
+long long total_lock_time = 0; /* int, count of lock time for final report */
 
 /* option error message */
 static char *error_message =
@@ -55,7 +61,6 @@ int m_clock_gettime(clockid_t id, struct timespec *tp) {
     else
         return rc;
 }
-
 
 /* safe wrap of pthread_create */
 int m_pthread_create(pthread_t *__restrict__ __newthread, const pthread_attr_t *__restrict__ __attr, 
@@ -114,7 +119,7 @@ int m_pthread_mutex_init(pthread_mutex_t *__mutex, const pthread_mutexattr_t *__
 }
 
 /* free all allocated memory: please only call after everything is setup */
-void* m_free() {
+void* freeAll() {
     int i;
     for (i = 0; i < num_elements; i++) {
         free(keys[i]); /* keys */
@@ -129,7 +134,7 @@ void* m_free() {
 /* segfault handler */
 void memoryFucked(int arg) {
     fprintf(stderr, "f**k, there's segfault: %d\n", arg);
-    m_free();
+    freeAll();
     exit(0);
 }
 
@@ -152,11 +157,29 @@ void* threadRoutine(void* vargp) {
     long long end = (my_id + 1) * num_itr;
     int i = 0;
     /* lock up */
-    if (sync == 'm') {
-        m_pthread_mutex_lock(&mutex);
-    }
-    else if (sync == 's') {
-        while (__sync_lock_test_and_set(&spin_lock, 1));
+    if (sync != 0) {
+        /* take time */
+        struct timespec before_lock;
+        m_clock_gettime(CLOCK_REALTIME, &before_lock);
+
+        if (sync == 'm') {
+            m_pthread_mutex_lock(&mutex);
+        }
+        else if (sync == 's') {
+            while (__sync_lock_test_and_set(&spin_lock, 1));
+        }
+
+        /* take time */
+        struct timespec after_lock;        
+        m_clock_gettime(CLOCK_REALTIME, &after_lock);
+        /* calculate time elapsed */
+        long long lock_time = after_lock.tv_nsec - before_lock.tv_nsec;
+        lock_time += (after_lock.tv_sec - before_lock.tv_sec) * 1000000000;
+        /* add this time to counter array */
+        if (lock_time_arr && lock_ops_arr) { /* only if these 2 have been initialized */
+            lock_time_arr[my_id] += lock_time;
+            lock_ops_arr[my_id] ++;
+        }
     }
 
     for (i = start; i < end; i++) {
@@ -241,7 +264,13 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (sync == 'c') {
+    /* initialize mutex counter and mutex time counter */
+    if (sync == 0) {
+        lock_ops_arr = m_malloc(sizeof(long long) * num_thr);
+        lock_time_arr = m_malloc(sizeof(long long) * num_thr);
+    }
+    /* initialize mutex */
+    else if (sync == 'c') {
         m_pthread_mutex_init(&mutex, NULL);
     }
 
@@ -324,9 +353,13 @@ int main(int argc, char **argv) {
     for (i = 0; i < num_thr; i++) {
         m_pthread_create(&tid[i], NULL, threadRoutine, (void*) i);
     }
-    /* join */
+    /* join and calculate final report of "time per lock"*/
     for (i = 0; i < num_thr; i++) {
         m_pthread_join(tid[i], NULL);
+        if (lock_ops_arr && lock_time_arr) {
+            total_lock_ops += lock_ops_arr[i];
+            total_lock_time += lock_time_arr[i];
+        }
     }
 
     /* take end time */
@@ -337,9 +370,17 @@ int main(int argc, char **argv) {
     long long ops = num_thr * num_itr * 3;
     long long run_time = end_time.tv_nsec - start_time.tv_nsec;
     run_time += (end_time.tv_sec - start_time.tv_sec) * 1000000000;
-    printf("list-%s-%s,%lld,%lld,1,%lld,%lld,%lld\n", yield_type, sync_type, num_thr, num_itr, 
+    printf("list-%s-%s,%lld,%lld,1,%lld,%lld,%lld", yield_type, sync_type, num_thr, num_itr, 
             ops, run_time, run_time / ops);
+    if (lock_ops_arr && lock_time_arr) {
+        printf(",%lld\n", total_lock_time/total_lock_ops);
+        free(lock_time_arr);
+        free(lock_ops_arr);
+    }
+    else {
+        printf("\n");
+    }
 
     /* delete routine */
-    m_free(); // I miss using delete
+    freeAll(); // I miss using delete
 }

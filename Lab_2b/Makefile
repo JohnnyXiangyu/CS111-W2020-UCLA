@@ -1,5 +1,5 @@
 cc=gcc
-flags=-g -Wall -Wextra -lpthread
+flags=-g -Wall -Wextra -lpthread -lprofiler
 
 build: lab2_add lab2_list
 
@@ -38,3 +38,11 @@ dclean:
 	rm -f *.png
 
 fclean: dclean clean
+
+profile: build # not working for now!
+	rm -f ./raw.gperf profile.out
+	LD_PRELOAD=/u/cs/ugrad/sriharsh/lib/libprofiler.so.0
+	CPUPROFILE=./raw.gperf ./lab2_list --iterations=1000 --threads=12 --sync=s
+	pprof --text ./lab2_list ./raw.gperf > profile.out
+	pprof --list=threadFunc ./lab2_list ./raw.gperf >> profile.out
+	rm -f ./raw.gperf profile.gperf lab2_list

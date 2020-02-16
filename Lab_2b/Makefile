@@ -40,9 +40,9 @@ dclean:
 fclean: dclean clean
 
 profile: build # not working for now!
-	rm -f ./raw.gperf profile.out
-	LD_PRELOAD=/u/cs/ugrad/sriharsh/lib/libprofiler.so.0
-	CPUPROFILE=./raw.gperf ./lab2_list --iterations=1000 --threads=12 --sync=s
-	pprof --text ./lab2_list ./raw.gperf > profile.out
-	pprof --list=threadFunc ./lab2_list ./raw.gperf >> profile.out
-	rm -f ./raw.gperf profile.gperf lab2_list
+	rm -f ./temp.prof profile.out
+	LD_PRELOAD=$PWDlibprofiler.so.0
+	CPUPROFILE=./temp.prof ./lab2_list --threads=12 --iterations=1000 --sync=s
+	# pprof --text ./lab2_list ./raw.gperf > profile.out
+	# pprof --list=threadFunc ./lab2_list ./raw.gperf >> profile.out
+	# rm -f ./raw.gperf profile.gperf lab2_list

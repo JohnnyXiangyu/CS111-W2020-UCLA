@@ -7,6 +7,7 @@
 #include "SortedList.h"
 
 extern SortedList_t head;
+extern long long num_lst;
 
 /* insert a node with previous and next give */
 int insertBetween(SortedListElement_t* pre, SortedListElement_t* nex, SortedListElement_t* new) {
@@ -78,8 +79,7 @@ SortedListElement_t *SortedList_lookup(SortedList_t *list, const char *key) {
     }
 }
 
-
-int SortedList_length(SortedList_t *list) {
+int getSubLength(SortedList_t *list) {
     if (! list) return -1;
 
     SortedList_t* temp = list;
@@ -99,4 +99,15 @@ int SortedList_length(SortedList_t *list) {
             return -1;
     }
     return count;
+}
+
+int SortedList_length(SortedList_t *mother_list) {
+    int i = 0;
+    int length = 0;
+    /* loop all sub lists and add their length together */
+    for (i = 0; i < num_lst; i ++) {
+        length += getSubLength(&mother_list[i]);
+    }
+
+    return length;
 }

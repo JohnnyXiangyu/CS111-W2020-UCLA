@@ -155,8 +155,7 @@ void memoryFucked(int arg) {
 // }
 
 
-long long hashKey(SortedList_t* new_node) {
-    const char* new_key = new_node -> key;
+long long hashKey(const char* new_key) {
     if (new_key) {
         int new_hash = (int) new_key[0];
         new_hash = new_hash % num_lst;
@@ -165,6 +164,11 @@ long long hashKey(SortedList_t* new_node) {
     else {
         return -1;
     }
+}
+
+long long hashNode(SortedList_t* new_node) {
+    const char* new_key = new_node -> key;
+    return hashKey(new_key);
 }
 
 
@@ -176,7 +180,7 @@ void* threadRoutine(void* vargp) {
     int i = 0;
 
     for (i = start; i < end; i++) {
-        long long new_hash = hashKey(&elements[i]);
+        long long new_hash = hashNode(&elements[i]);
         SortedList_t* this_head = &head[new_hash];
 
         m_pthread_mutex_lock(&sub_mutexes[new_hash]);
@@ -184,7 +188,7 @@ void* threadRoutine(void* vargp) {
         m_pthread_mutex_unlock(&sub_mutexes[new_hash]);
     }
     // if (debug_flag) { printList(); } 
-    if (SortedList_length(&head) == -1) {
+    if (SortedList_length(head) == -1) { // TODO: implement new length function
         fprintf(stderr, "ERROR: SortedList_length() return -1, exiting...\n");
         exit(2);
     }

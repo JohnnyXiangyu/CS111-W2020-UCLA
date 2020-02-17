@@ -11,18 +11,20 @@
 /* global variables */
 long long num_thr = 1;    /* number of threads */
 long long num_itr = 1;    /* number of iterations */
+long long num_lst = 1;    /* number of sub-lists */
 long long num_elements = 0;
-int debug_flag = 0; /* flag debug mode */
-int opt_yield; /* yield options */
+
+int debug_flag = 0;    /* flag debug mode */
+int opt_yield;    /* yield options */
 static char* yield_arg_str = "";
 static char* yield_type = "none";
 char sync = 0;
 static char* sync_type = "none";
 
-SortedList_t head; /* head node */
-SortedListElement_t* elements; /* all elements */
-char** keys; /* all keys (used for deletion) */
-pthread_t* tid = NULL; /* threads */
+SortedList_t head;    /* head node */
+SortedListElement_t* elements;    /* all elements */
+char** keys;    /* all keys (used for deletion) */
+pthread_t* tid = NULL;    /* threads */
 
 pthread_mutex_t mutex; /* shared mutex */
 volatile int spin_lock = 0; /* shared spin lock */
@@ -215,12 +217,13 @@ int main(int argc, char **argv) {
     opt_yield = 0;
 
     /* precess args */
-    struct option options[6] = {
+    struct option options[7] = {
         {"threads", required_argument, 0, 't'},
         {"iterations", required_argument, 0, 'i'},
         {"yield", required_argument, 0, 'y'},
         {"debug", no_argument, 0, 'd'},
         {"sync", required_argument, 0, 's'},
+        {"list", required_argument, 0, 'l'},
         {0, 0, 0, 0}
     };
     int temp = 0;
@@ -256,6 +259,9 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "ERROR: unrecognized sync option %s provided, exiting...\n", optarg);
                 exit(1);
             }
+            break;
+          case 'l':
+            num_lst = atoi(optarg);
             break;
           case '?':
             fprintf(stderr, "%s\r\n", error_message);

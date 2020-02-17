@@ -285,7 +285,7 @@ int main(int argc, char **argv) {
         }
     }
     /* initialize mutex */
-    else if (sync == 'c') {
+    else if (sync == 'm') {
         m_pthread_mutex_init(&mutex, NULL);
         sub_mutexes = m_malloc(sizeof(pthread_mutex_t) * num_lst);
         for (i = 0; i < num_lst; i ++) {

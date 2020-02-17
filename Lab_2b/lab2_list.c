@@ -381,8 +381,8 @@ int main(int argc, char **argv) {
     long long ops = num_thr * num_itr * 3;
     long long run_time = end_time.tv_nsec - start_time.tv_nsec;
     run_time += (end_time.tv_sec - start_time.tv_sec) * 1000000000;
-    printf("list-%s-%s,%lld,%lld,1,%lld,%lld,%lld", yield_type, sync_type, 
-            num_thr, num_itr, ops, run_time, run_time / ops);
+    printf("list-%s-%s,%lld,%lld,%lld,%lld,%lld,%lld", yield_type, sync_type, 
+            num_thr, num_itr, num_lst, ops, run_time, run_time / ops);
     /* time per lock */
     if (lock_ops_arr && lock_time_arr) {
         printf(",%lld\n", total_lock_time/total_lock_ops);

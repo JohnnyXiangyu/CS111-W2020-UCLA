@@ -131,6 +131,7 @@ void* freeAll() {
     free(elements); /* all nodes */
     free(tid); /* all threads */
     free(sub_mutexes); /* mutexes for subroutines */
+    free(sub_spin_locks); /* spin locks */
     return 0;
 }
 
@@ -143,17 +144,6 @@ void memoryFucked(int arg) {
 }
 
 
-// /* debug mode only: print the whole list starting from head */
-// void printList() {
-//     SortedListElement_t* temp = &head;
-//     do {
-//         fprintf(stderr, "%ld\n  prev:%ld\n  next:%ld\n", (long)temp, (long)temp->prev, (long)temp->next);
-//         temp = temp->next;
-//     } while (temp != &head);
-//     fprintf(stderr, "!\n");
-// }
-
-
 long long hashKey(const char* new_key) {
     if (new_key) {
         int new_hash = (int) new_key[0];
@@ -164,6 +154,7 @@ long long hashKey(const char* new_key) {
         return -1;
     }
 }
+
 
 long long hashNode(SortedList_t* new_node) {
     const char* new_key = new_node -> key;
@@ -340,6 +331,12 @@ int main(int argc, char **argv) {
         sub_mutexes = m_malloc(sizeof(pthread_mutex_t) * num_lst);
         for (i = 0; i < num_lst; i ++) {
             m_pthread_mutex_init(&(sub_mutexes[i]), NULL);
+        }
+    }
+    if (sync == 's') {
+        sub_spin_locks = m_malloc(sizeof(volatile int) * num_lst);
+        for (i = 0; i < num_lst; i++) {
+            sub_spin_locks[i] = 0;
         }
     }
 

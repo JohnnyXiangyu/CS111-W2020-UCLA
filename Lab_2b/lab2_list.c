@@ -131,6 +131,7 @@ void* freeAll() {
     free(keys);
     free(elements); /* all nodes */
     free(tid); /* all threads */
+    free(sub_mutexes); /* mutexes for subroutines */
     return 0;
 }
 
@@ -143,15 +144,15 @@ void memoryFucked(int arg) {
 }
 
 
-/* debug mode only: print the whole list starting from head */
-void printList() {
-    SortedListElement_t* temp = &head;
-    do {
-        fprintf(stderr, "%ld\n  prev:%ld\n  next:%ld\n", (long)temp, (long)temp->prev, (long)temp->next);
-        temp = temp->next;
-    } while (temp != &head);
-    fprintf(stderr, "!\n");
-}
+// /* debug mode only: print the whole list starting from head */
+// void printList() {
+//     SortedListElement_t* temp = &head;
+//     do {
+//         fprintf(stderr, "%ld\n  prev:%ld\n  next:%ld\n", (long)temp, (long)temp->prev, (long)temp->next);
+//         temp = temp->next;
+//     } while (temp != &head);
+//     fprintf(stderr, "!\n");
+// }
 
 
 long long hashKey(SortedList_t* new_node) {
@@ -182,7 +183,7 @@ void* threadRoutine(void* vargp) {
             SortedList_insert(this_head, &elements[i]);
         m_pthread_mutex_unlock(&sub_mutexes[new_hash]);
     }
-    if (debug_flag) { printList(); }
+    // if (debug_flag) { printList(); }
     if (SortedList_length(&head) == -1) {
         fprintf(stderr, "ERROR: SortedList_length() return -1, exiting...\n");
         exit(2);

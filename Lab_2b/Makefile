@@ -12,7 +12,7 @@ graphs: tests
 lab2_list: lab2_list.c SortedList.h SortedList.c 
 	$(cc) lab2_list.c SortedList.c -o lab2_list $(flags)
 
-dist: profile Makefile graphs README
+dist: Makefile README graphs profile 
 	tar -czvf lab2b-805061659.tar.gz SortedList.h SortedList.c lab2_list.c\
 	Makefile\
 	lab2b_list.csv profile.out\
@@ -41,4 +41,4 @@ profile: build
 	LD_PRELOAD=libprofiler.so.0 CPUPROFILE=./temp.prof ./lab2_list --threads=12 --iterations=1000 --sync=s
 	pprof --text ./lab2_list ./temp.prof > profile.out
 	pprof --list=threadRoutine ./lab2_list ./temp.prof >> profile.out
-	rm -f ./temp.prof lab2_list
+	rm -f ./temp.prof

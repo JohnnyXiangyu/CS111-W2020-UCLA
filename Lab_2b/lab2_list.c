@@ -21,7 +21,7 @@ static char* yield_type = "none";
 char sync = 0;
 static char* sync_type = "none";
 
-SortedList_t head;    /* head node */
+SortedList_t* head;    /* array of head nodes */
 SortedListElement_t* elements;    /* all elements */
 char** keys;    /* all keys (used for deletion) */
 pthread_t* tid = NULL;    /* threads */
@@ -126,6 +126,7 @@ void* freeAll() {
     for (i = 0; i < num_elements; i++) {
         free(keys[i]); /* keys */
     }
+    free(head); /* heads' array */
     free(keys);
     free(elements); /* all nodes */
     free(tid); /* all threads */
@@ -334,9 +335,17 @@ int main(int argc, char **argv) {
     num_elements = num_thr * num_itr;
 
     /* create empty list */
-    head.next = &head;
-    head.prev = &head;
-    head.key = NULL;
+    // head.next = &head;
+    // head.prev = &head;
+    // head.key = NULL;
+
+    /* initialize list array */
+    head = m_malloc(sizeof(SortedList_t) * num_lst);
+    for (i = 0; i < num_lst; i ++) {
+        head[i].next = &(head[i]);
+        head[i].prev = &(head[i]);
+        head[i].key = NULL;
+    }
 
     /* allocate all elements */
     elements = (SortedListElement_t*) m_malloc(sizeof(SortedListElement_t) * num_elements);

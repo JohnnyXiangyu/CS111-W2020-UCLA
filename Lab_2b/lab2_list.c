@@ -183,7 +183,7 @@ void* threadRoutine(void* vargp) {
             SortedList_insert(this_head, &elements[i]);
         m_pthread_mutex_unlock(&sub_mutexes[new_hash]);
     }
-    // if (debug_flag) { printList(); }
+    // if (debug_flag) { printList(); } 
     if (SortedList_length(&head) == -1) {
         fprintf(stderr, "ERROR: SortedList_length() return -1, exiting...\n");
         exit(2);

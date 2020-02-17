@@ -9,3 +9,17 @@ do
     ./lab2_list --threads=$i --iterations=1000 --sync=s >> lab2b_list.csv
 done
 
+# Q2.3.4
+for i in 1 2 4 8 12 16 
+do
+    for j in 1 2 4 8 16
+    do 
+        ./lab2_list --threads=$i --iterations=$j --yield=id --lists=4 >> lab2b_list.csv
+    done
+
+    for j in 10 20 40 80
+    do 
+        ./lab2_list --threads=$i --iterations=$j --yield=id --lists=4 --sync=m >> lab2b_list.csv
+        ./lab2_list --threads=$i --iterations=$j --yield=id --lists=4 --sync=s >> lab2b_list.csv
+    done
+done

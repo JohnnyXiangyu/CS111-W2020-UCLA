@@ -278,7 +278,7 @@ int main(int argc, char **argv) {
         {"yield", required_argument, 0, 'y'},
         {"debug", no_argument, 0, 'd'},
         {"sync", required_argument, 0, 's'},
-        {"list", required_argument, 0, 'l'},
+        {"lists", required_argument, 0, 'l'},
         {0, 0, 0, 0}
     };
     int temp = 0;

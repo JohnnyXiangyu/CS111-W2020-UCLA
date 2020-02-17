@@ -178,7 +178,7 @@ void* threadRoutine(void* vargp) {
         /* add this time to counter array */
         if (lock_time_arr && lock_ops_arr) { /* only if these 2 have been initialized */
             lock_time_arr[my_id] += lock_time;
-            lock_ops_arr[my_id] ++;
+            lock_ops_arr[my_id] += 1;
         }
     }
 
@@ -265,9 +265,14 @@ int main(int argc, char **argv) {
     }
 
     /* initialize mutex counter and mutex time counter */
-    if (sync == 0) {
+    if (sync != 0) {
         lock_ops_arr = m_malloc(sizeof(long long) * num_thr);
         lock_time_arr = m_malloc(sizeof(long long) * num_thr);
+        /* initial value */
+        for (i = 0; i < num_thr; i++) {
+            lock_ops_arr[i] = 0;
+            lock_time_arr[i] = 0;
+        }
     }
     /* initialize mutex */
     else if (sync == 'c') {
@@ -370,10 +375,13 @@ int main(int argc, char **argv) {
     long long ops = num_thr * num_itr * 3;
     long long run_time = end_time.tv_nsec - start_time.tv_nsec;
     run_time += (end_time.tv_sec - start_time.tv_sec) * 1000000000;
-    printf("list-%s-%s,%lld,%lld,1,%lld,%lld,%lld", yield_type, sync_type, num_thr, num_itr, 
-            ops, run_time, run_time / ops);
+    printf("list-%s-%s,%lld,%lld,1,%lld,%lld,%lld", yield_type, sync_type, 
+            num_thr, num_itr, ops, run_time, run_time / ops);
+    /* time per lock */
     if (lock_ops_arr && lock_time_arr) {
         printf(",%lld\n", total_lock_time/total_lock_ops);
+        /* free the 2 arrays here since 
+           this is the last time checking for them */
         free(lock_time_arr);
         free(lock_ops_arr);
     }
@@ -381,6 +389,11 @@ int main(int argc, char **argv) {
         printf("\n");
     }
 
-    /* delete routine */
+    if (debug_flag) {
+        printf("total lock time: %lld, total lock ops: %lld\n", 
+                total_lock_time, total_lock_ops);
+    }
+
+    /* delete routine for always-need-to-deletes */
     freeAll(); // I miss using delete
 }

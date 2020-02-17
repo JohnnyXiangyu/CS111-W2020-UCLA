@@ -27,7 +27,7 @@ char** keys;    /* all keys (used for deletion) */
 pthread_t* tid = NULL;    /* threads */
 
 pthread_mutex_t* sub_mutexes = NULL; /* mutex for each sub list */
-volatile int *sub_spin_locks = NULL; /* spin locks for each sub list */
+int* sub_spin_locks = NULL; /* spin locks for each sub list */
 
 long long* lock_ops_arr = NULL; /* array, # lock operation happened in each thread */
 long long* lock_time_arr = NULL; /* array, nanoseconds spent on waiting mutex for each thread */
@@ -334,7 +334,7 @@ int main(int argc, char **argv) {
         }
     }
     if (sync == 's') {
-        sub_spin_locks = m_malloc(sizeof(volatile int) * num_lst);
+        sub_spin_locks = m_malloc(sizeof(int) * num_lst);
         for (i = 0; i < num_lst; i++) {
             sub_spin_locks[i] = 0;
         }

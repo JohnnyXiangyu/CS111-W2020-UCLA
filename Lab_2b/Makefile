@@ -32,6 +32,7 @@ dclean:
 	rm -f *.csv
 	rm -f *.png
 	rm -f *.prof
+	rm -f *.out
 
 fclean: dclean clean
 

@@ -27,6 +27,7 @@ char** keys;    /* all keys (used for deletion) */
 pthread_t* tid = NULL;    /* threads */
 
 pthread_mutex_t mutex; /* shared mutex */
+pthread_mutex_t* sub_mutexes; /* mutex for each sub list */
 volatile int spin_lock = 0; /* shared spin lock */
 
 long long* lock_ops_arr = NULL; /* array, # lock operation happened in each thread */
@@ -153,40 +154,33 @@ void printList() {
 }
 
 
+long long hashKey(SortedList_t* new_node) {
+    const char* new_key = new_node -> key;
+    if (new_key) {
+        int new_hash = (int) new_key[0];
+        new_hash = new_hash % num_lst;
+        return new_hash;
+    }
+    else {
+        return -1;
+    }
+}
+
+
 /* thread routine */
 void* threadRoutine(void* vargp) {
     long long my_id = (long long) vargp;
     long long start = my_id * num_itr;
     long long end = (my_id + 1) * num_itr;
     int i = 0;
-    /* lock up */
-    if (sync != 0) {
-        /* take time */
-        struct timespec before_lock;
-        m_clock_gettime(CLOCK_REALTIME, &before_lock);
-
-        if (sync == 'm') {
-            m_pthread_mutex_lock(&mutex);
-        }
-        else if (sync == 's') {
-            while (__sync_lock_test_and_set(&spin_lock, 1));
-        }
-
-        /* take time */
-        struct timespec after_lock;        
-        m_clock_gettime(CLOCK_REALTIME, &after_lock);
-        /* calculate time elapsed */
-        long long lock_time = after_lock.tv_nsec - before_lock.tv_nsec;
-        lock_time += (after_lock.tv_sec - before_lock.tv_sec) * 1000000000;
-        /* add this time to counter array */
-        if (lock_time_arr && lock_ops_arr) { /* only if these 2 have been initialized */
-            lock_time_arr[my_id] += lock_time;
-            lock_ops_arr[my_id] += 1;
-        }
-    }
 
     for (i = start; i < end; i++) {
-        SortedList_insert(&head, &elements[i]);
+        long long new_hash = hashKey(&elements[i]);
+        SortedList_t* this_head = &head[new_hash];
+
+        m_pthread_mutex_lock(&sub_mutexes[new_hash]);
+            SortedList_insert(this_head, &elements[i]);
+        m_pthread_mutex_unlock(&sub_mutexes[new_hash]);
     }
     if (debug_flag) { printList(); }
     if (SortedList_length(&head) == -1) {
@@ -195,11 +189,15 @@ void* threadRoutine(void* vargp) {
     }
 
     for (i = start; i < end; i++) {
-        SortedListElement_t* temp = SortedList_lookup(&head, keys[i]);
-        if (SortedList_delete(temp)) {
-            fprintf(stderr, "ERROR: SortedList_delete() return 1, exiting...\n");
-            exit(2);
-        }
+        long long old_hash = hashKey(keys[i]);
+        SortedListElement_t* temp = SortedList_lookup(&head[old_hash], keys[i]);
+
+        m_pthread_mutex_lock(&sub_mutexes[old_hash]);
+            if (SortedList_delete(temp)) {
+                fprintf(stderr, "ERROR: SortedList_delete() return 1, exiting...\n");
+                exit(2);
+            }
+        m_pthread_mutex_unlock(&sub_mutexes[old_hash]);
     }
 
     /* free */
@@ -284,6 +282,10 @@ int main(int argc, char **argv) {
     /* initialize mutex */
     else if (sync == 'c') {
         m_pthread_mutex_init(&mutex, NULL);
+        sub_mutexes = m_malloc(sizeof(pthread_mutex_t) * num_lst);
+        for (i = 0; i < num_lst; i ++) {
+            m_pthread_mutex_init(&sub_mutexes[i], NULL);
+        }
     }
 
     /* construct opt_yield bit mask */
@@ -334,14 +336,10 @@ int main(int argc, char **argv) {
 
     num_elements = num_thr * num_itr;
 
-    /* create empty list */
-    // head.next = &head;
-    // head.prev = &head;
-    // head.key = NULL;
-
-    /* initialize list array */
+    /* initialize list and mutex array */
     head = m_malloc(sizeof(SortedList_t) * num_lst);
     for (i = 0; i < num_lst; i ++) {
+        /* mutex */
         head[i].next = &(head[i]);
         head[i].prev = &(head[i]);
         head[i].key = NULL;

@@ -84,16 +84,15 @@ int getSubLength(SortedList_t *list) {
 
     SortedList_t* temp = list;
     SortedList_t* pre = list;
-    long long count = 1;
+    long long count = 0;
     while (temp && temp->next != list) {
         if (opt_yield & LOOKUP_YIELD) {
             sched_yield();
         }
-        if (temp->key == NULL) 
-            count --;
+        if (temp->key != NULL) 
+            count++;
         pre = temp;
         temp = temp-> next;
-        count ++;
         /* check corruption */
         if (!temp || temp->prev != pre)
             return -1;

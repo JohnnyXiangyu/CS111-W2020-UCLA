@@ -432,6 +432,12 @@ int main(int argc, char **argv) {
         }
     }
 
+    int rc = 0;
+    if ((rc=SortedList_length(head)) != 0) {
+        fprintf(stderr, "ERROR: SortedList_length() return %d after joining threads, exiting...\n", rc);
+        exit(2);
+    }
+
     /* take end time */
     struct timespec end_time;
     m_clock_gettime(CLOCK_REALTIME, &end_time);

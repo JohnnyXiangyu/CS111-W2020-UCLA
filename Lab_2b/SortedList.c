@@ -9,6 +9,9 @@
 extern SortedList_t head;
 extern long long num_lst;
 
+extern pthread_mutex_t* sub_mutexes;
+extern int* sub_spin_locks;
+
 /* insert a node with previous and next give */
 int insertBetween(SortedListElement_t* pre, SortedListElement_t* nex, SortedListElement_t* new) {
     new->prev = pre;

@@ -9,9 +9,6 @@
 extern SortedList_t head;
 extern long long num_lst;
 
-extern pthread_mutex_t* sub_mutexes;
-extern int* sub_spin_locks;
-
 /* insert a node with previous and next give */
 int insertBetween(SortedListElement_t* pre, SortedListElement_t* nex, SortedListElement_t* new) {
     new->prev = pre;
@@ -82,7 +79,7 @@ SortedListElement_t *SortedList_lookup(SortedList_t *list, const char *key) {
     }
 }
 
-int getSubLength(SortedList_t *list) {
+int SortedList_length(SortedList_t *list) {
     if (! list) return -1;
 
     SortedList_t* temp = list;
@@ -103,13 +100,13 @@ int getSubLength(SortedList_t *list) {
     return count;
 }
 
-int SortedList_length(SortedList_t *mother_list) {
-    int i = 0;
-    int length = 0;
-    /* loop all sub lists and add their length together */
-    for (i = 0; i < num_lst; i ++) {
-        length += getSubLength(&mother_list[i]);
-    }
+// int SortedList_length(SortedList_t *mother_list) {
+//     int i = 0;
+//     int length = 0;
+//     /* loop all sub lists and add their length together */
+//     for (i = 0; i < num_lst; i ++) {
+//         length += getSubLength(&mother_list[i]);
+//     }
 
-    return length;
-}
+//     return length;
+// }

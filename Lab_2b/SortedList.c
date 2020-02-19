@@ -82,7 +82,7 @@ SortedListElement_t *SortedList_lookup(SortedList_t *list, const char *key) {
     }
 }
 
-int getSubLength(SortedList_t *list) {
+int SortedList_length(SortedList_t *list) {
     if (! list) return -1;
 
     SortedList_t* temp = list;
@@ -103,13 +103,13 @@ int getSubLength(SortedList_t *list) {
     return count;
 }
 
-int SortedList_length(SortedList_t *mother_list) {
-    int i = 0;
-    int length = 0;
-    /* loop all sub lists and add their length together */
-    for (i = 0; i < num_lst; i ++) {
-        length += getSubLength(&mother_list[i]);
-    }
+// int SortedList_length(SortedList_t *mother_list) {
+//     int i = 0;
+//     int length = 0;
+//     /* loop all sub lists and add their length together */
+//     for (i = 0; i < num_lst; i ++) {
+//         length += getSubLength(&mother_list[i]);
+//     }
 
-    return length;
-}
+//     return length;
+// }

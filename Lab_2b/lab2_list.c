@@ -170,6 +170,7 @@ void* threadRoutine(void* vargp) {
     long long end = (my_id + 1) * num_itr;
     int i = 0;
 
+    /* insertion */
     for (i = start; i < end; i++) {
         long long new_hash = hashNode(&(elements[i]));
         SortedList_t* this_head = &(head[new_hash]);
@@ -207,16 +208,52 @@ void* threadRoutine(void* vargp) {
         if (sync == 's')
             __sync_lock_release(&sub_spin_locks[new_hash]);
     }
-    // if (debug_flag) { printList(); } 
-    if (SortedList_length(head) == -1) {
+
+    /* get length and check */
+    int length = 0;
+    for (i = 0; i < num_lst; i ++) {
+        /* lock sublist before traversal */
+        if (sync) {
+            /* start time */
+            struct timespec before_lock;
+            m_clock_gettime(CLOCK_REALTIME, &before_lock);
+
+            if (sync == 'm')
+                m_pthread_mutex_lock(&(sub_mutexes[i]));
+            if (sync == 's') {
+                while (__sync_lock_test_and_set(&sub_spin_locks[i], 1));
+            }
+
+            /* end time */
+            struct timespec after_lock;        
+            m_clock_gettime(CLOCK_REALTIME, &after_lock);
+            /* calculate time elapsed */
+            long long lock_time = after_lock.tv_nsec - before_lock.tv_nsec;
+            lock_time += (after_lock.tv_sec - before_lock.tv_sec) * 1000000000;
+            /* add this time to counter array */
+            if (lock_time_arr && lock_ops_arr) { /* only if these 2 have been initialized */
+                lock_time_arr[my_id] += lock_time;
+                lock_ops_arr[my_id] += 1;
+            }
+        }
+
+        length += SortedList_length(&head[i]);
+
+        /* unlock */
+        if (sync == 'm') 
+            m_pthread_mutex_unlock(&(sub_mutexes[i]));
+        if (sync == 's')
+            __sync_lock_release(&sub_spin_locks[i]);
+    }
+    if (length == -1) {
         fprintf(stderr, "ERROR: SortedList_length() return -1, exiting...\n");
         exit(2);
     }
 
+    /* look up and delete */
     for (i = start; i < end; i++) {
         long long old_hash = hashKey(keys[i]);
-        SortedListElement_t* temp = SortedList_lookup(&(head[old_hash]), keys[i]);
-
+        
         /* lock up */
         if (sync) {
             /* start time */
@@ -242,8 +279,10 @@ void* threadRoutine(void* vargp) {
             }
         }
 
-        if (SortedList_delete(temp)) {
-            fprintf(stderr, "ERROR: SortedList_delete() return 1, exiting...\n");
+        SortedListElement_t* temp = SortedList_lookup(&(head[old_hash]), keys[i]);
+        int rc = 0;
+        if ((rc = SortedList_delete(temp))) {
+            fprintf(stderr, "ERROR: SortedList_delete() return %d, exiting...\n", rc);
             exit(2);
         }
 
@@ -432,9 +471,13 @@ int main(int argc, char **argv) {
         }
     }
 
-    int rc = 0;
-    if ((rc=SortedList_length(head)) != 0) {
-        fprintf(stderr, "ERROR: SortedList_length() return %d after joining threads, exiting...\n", rc);
+    /* upon joining all threads, get list size again */
+    int final_length = 0;
+    for (i = 0; i < num_lst; i++) {
+        final_length += SortedList_length(&head[i]);
+    }
+    if (final_length != 0) {
+        fprintf(stderr, "ERROR: SortedList_length() return %d after joining threads, exiting...\n", final_length);
         exit(2);
     }
 

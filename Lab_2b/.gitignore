@@ -9,3 +9,5 @@ functions.sh
 libprofiler.so.0
 *.prof
 *.out
+.sanity_test/*
+!.sanity_test/P2B_check.sh

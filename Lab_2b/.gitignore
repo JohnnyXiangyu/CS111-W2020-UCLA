@@ -9,3 +9,4 @@ functions.sh
 libprofiler.so.0
 *.prof
 *.out
+.sanity_test/

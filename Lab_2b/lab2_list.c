@@ -253,8 +253,7 @@ void* threadRoutine(void* vargp) {
     /* look up and delete */
     for (i = start; i < end; i++) {
         long long old_hash = hashKey(keys[i]);
-        SortedListElement_t* temp = SortedList_lookup(&(head[old_hash]), keys[i]);
-
+        
         /* lock up */
         if (sync) {
             /* start time */
@@ -280,8 +279,10 @@ void* threadRoutine(void* vargp) {
             }
         }
 
-        if (SortedList_delete(temp)) {
-            fprintf(stderr, "ERROR: SortedList_delete() return 1, exiting...\n");
+        SortedListElement_t* temp = SortedList_lookup(&(head[old_hash]), keys[i]);
+        int rc = 0;
+        if ((rc = SortedList_delete(temp))) {
+            fprintf(stderr, "ERROR: SortedList_delete() return %d, exiting...\n", rc);
             exit(2);
         }
 

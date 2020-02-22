@@ -1,19 +1,17 @@
-lab=lab_4a
-host=192.168.137.157
-lhost=192.168.7.2
-usr=root
+cc=gcc
+flags=-Wall -Wextra -g 
 
-dist: build_run.png connected.png copy.png git.png my_beaglebone.jpg Makefile README
-	tar -cvzf lab4b-805061659.tar.gz build_run.png connected.png copy.png git.png my_beaglebone.jpg Makefile README
+default: lab4b
 
-install: helloworld.c
-	scp ./helloworld.c $(usr)@$(host):/root/projects/cs111/$(lab)/
+lab4b: lab4b.c 
+	$(cc) lab4b.c -o lab4b $(flags)
 
-connect:
-	ssh $(usr)@$(host)
+dist: lab4b.c Makefile README
+	tar -cvzf lab4b-805061659.tar.gz lab4b.c Makefile README
 
-lconnect:
-	ssh $(usr)@$(lhost)
+check: lab4b
+	bash lab4b_check.sh 
 
 clean: 
-	rm -f lab4a-805061659.tar.gz
+	rm -f lab4b-805061659.tar.gz
+	rm -f lab4b

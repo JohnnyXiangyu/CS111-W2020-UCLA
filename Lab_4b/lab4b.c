@@ -33,6 +33,8 @@ void printTime() {
 /* handler for interruption (button) */
 void intHandler() {
     run_flag = 0;
+    printTime();
+    printf(" OFF\n");
 }
 
 /* convert analog input to celcius temperature */

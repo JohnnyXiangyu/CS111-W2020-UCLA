@@ -14,15 +14,18 @@ int debug_flag = 0; /* flag debug option */
 const int senPin = 1; /* sensor pin */
 const int butPin = 60; /* button pin */
 
+mraa_gpio_context button; /* global variable of button pin */
+mraa_aio_context t_sensor; /* global variable of sensor pin */
+
 /* constants defined by groove temp sensor */
 const int B = 4275;
 const float R0 = 100000.0;
-
 
 /* configurable globals */
 int sample_rate = 1; /* time between reading, default 1 */
 
 
+/* separate function that prints formatted time */
 void printTime() {
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
@@ -30,12 +33,33 @@ void printTime() {
 }
 
 
+/* separate function that prints formatted temperature INT.DEC */
+void printTemp(float in_temp) {
+    in_temp *= 10;
+    printf("%d.%d", (int) in_temp / 10, (int) in_temp % 10);
+}
+
+
+/* wrap up function: only called after initializing pins */
+void freePins() {
+    mraa_gpio_close(button);
+    mraa_aio_close(t_sensor);
+}
+
+
 /* handler for interruption (button) */
 void intHandler() {
-    run_flag = 0;
-    printTime();
-    printf(" OFF\n");
+    if (run_flag) {
+        run_flag = 0;
+        printTime();
+        printf(" OFF\n");
+
+        /* wrap and exit */
+        freePins();
+        exit(0);
+    }
 }
+
 
 /* convert analog input to celcius temperature */
 float convertToCelcius(int a) {
@@ -104,11 +128,9 @@ int main(int argc, char **argv) {
     // }
 
     /* register a gpio context, for pin 60, name button */
-    mraa_gpio_context button;
     button = mraa_gpio_init(butPin);
 
     /* register a AIO context, for pin 1, name t_sensor */
-    mraa_aio_context t_sensor;
     t_sensor = mraa_aio_init(senPin);
     
     /* configure buzzer to output pin */
@@ -125,7 +147,8 @@ int main(int argc, char **argv) {
         float cur_temp = convertToCelcius(analog_in);
 
         printTime();
-        printf(" %d", (int) cur_temp);
+        printf(" ");
+        printTemp(cur_temp);
         printf("\n");
 
         /* wait for some time */
@@ -133,8 +156,7 @@ int main(int argc, char **argv) {
     }
 
     /* close context */
-    mraa_gpio_close(button);
-    mraa_aio_close(t_sensor);
+    freePins();
 
     return 0;
 }

@@ -59,9 +59,13 @@ void printTemp(float in_temp) {
 
 
 /* wrap up function: only called after initializing pins */
-void freePins() {
+void finalize() {
     mraa_gpio_close(button);
     mraa_aio_close(t_sensor);
+
+    if (log_file != NULL) {
+        fclose(log_file);
+    }
 }
 
 
@@ -76,7 +80,7 @@ void intHandler() {
         }
 
         /* wrap and exit */
-        freePins();
+        finalize();
         exit(0);
     }
 }
@@ -176,7 +180,7 @@ int main(int argc, char **argv) {
     }
 
     /* close context */
-    freePins();
+    finalize();
 
     return 0;
 }

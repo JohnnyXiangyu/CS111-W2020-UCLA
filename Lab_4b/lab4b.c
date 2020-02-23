@@ -69,7 +69,13 @@ void finalize() {
     mraa_gpio_close(button);
     mraa_aio_close(t_sensor);
 
+    /* print final message */
+    printTime();
+    printf(" SHUTDOWN\n");
+
+    /* close open file */
     if (log_file != NULL) {
+        fprintf(log_file, " SHUTDOWN\n");
         fclose(log_file);
     }
 }
@@ -79,11 +85,6 @@ void finalize() {
 void intHandler() {
     if (on_flag) {
         on_flag = 0;
-        printTime();
-        printf(" SHUTDOWN\n");
-        if (log_flag) {
-            fprintf(log_file, " SHUTDOWN\n");
-        }
 
         /* wrap and exit */
         finalize();
@@ -116,7 +117,7 @@ int parseReadBuf() {
     processed_byte = 0;
     for (i = 0; i < max; i++) {
         if (read_buf[i] == '\n') {
-            read_buf[i] = '0';
+            read_buf[i] = '\0';
             processed_byte = i;
         }
     }
@@ -125,6 +126,7 @@ int parseReadBuf() {
     i = 0;
     while (i < processed_byte) {
         int cur_len = strlen(&read_buf[i]);
+        int valid = 1;
 
         if (strcmp("scale=F", &read_buf[i]) == 0) {
             scale = 'F';
@@ -151,9 +153,15 @@ int parseReadBuf() {
             period = new_period;
             if (debug_flag) { fprintf(stderr, "P\n"); }
         }
+        else if (cur_len >= 3 && strncmp("LOG", &read_buf[i], 3) == 0) {
+            valid = 1;
+        }
+        else {
+            valid = 0;
+        }
 
-        if (log_flag && log_file != NULL) {
-            fprintf(log_file, "%s", &read_buf[i]);
+        if (log_flag && log_file != NULL && valid) {
+            fprintf(log_file, "%s\n", &read_buf[i]);
         }
 
         i += cur_len;

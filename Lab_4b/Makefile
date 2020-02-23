@@ -1,5 +1,5 @@
 cc=gcc
-flags=-Wall -Wextra -g -lmraa
+flags=-Wall -Wextra -g -lmraa -lm
 
 lab=Lab_4b
 files=lab4b.c Makefile README

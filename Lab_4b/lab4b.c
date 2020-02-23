@@ -38,6 +38,7 @@ int main() {
 
     /* close context */
     mraa_gpio_close(button);
+    mraa_aio_close(t_sensor);
 
     return 0;
 }

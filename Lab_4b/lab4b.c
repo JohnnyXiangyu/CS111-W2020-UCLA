@@ -126,7 +126,6 @@ int parseReadBuf() {
     i = 0;
     while (i < processed_byte) {
         int cur_len = strlen(&read_buf[i]);
-        int valid = 1;
 
         if (strcmp("scale=F", &read_buf[i]) == 0) {
             scale = 'F';
@@ -153,14 +152,8 @@ int parseReadBuf() {
             period = new_period;
             if (debug_flag) { fprintf(stderr, "P\n"); }
         }
-        else if (cur_len >= 3 && strncmp("LOG", &read_buf[i], 3) == 0) {
-            valid = 1;
-        }
-        else {
-            valid = 0;
-        }
 
-        if (log_flag && log_file != NULL && valid) {
+        if (log_flag && log_file != NULL) {
             fprintf(log_file, "%s\n", &read_buf[i]);
         }
 

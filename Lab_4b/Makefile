@@ -19,7 +19,7 @@ check: lab4b
 	bash lab4b_check.sh 
 
 install: $(files)
-	scp $(files) $(host):/root/projects/cs111/$(lab)/
+	scp $(files) P4B_check.sh $(host):/root/projects/cs111/$(lab)/
 
 clean: 
 	rm -f lab4b-805061659.tar.gz

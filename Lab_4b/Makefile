@@ -2,7 +2,7 @@ cc=gcc
 flags=-Wall -Wextra -g -lmraa -lm
 
 lab=Lab_4b
-files=lab4b.c Makefile README
+files=lab4b.c Makefile README lab4b_check.sh
 
 usr=root
 host=beagle# this is configuration on my device only

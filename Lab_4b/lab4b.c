@@ -125,23 +125,24 @@ int parseReadBuf() {
     /* loop each segment of read_buf */
     i = 0;
     while (i < processed_byte) {
+        if (debug_flag) { fprintf(stderr, "parse loop %d\n", i); }
         int cur_len = strlen(&read_buf[i]);
 
-        if (strcmp("scale=F", &read_buf[i]) == 0) {
+        if (strcmp("SCALE=F", &read_buf[i]) == 0) {
             scale = 'F';
             if (debug_flag) { fprintf(stderr, "F\n"); }
         }
-        else if (strcmp("scale=C", &read_buf[i]) == 0) {
+        else if (strcmp("SCALE=C", &read_buf[i]) == 0) {
             scale = 'C';
             if (debug_flag) { fprintf(stderr, "C\n"); }
         }
         else if (strcmp("STOP", &read_buf[i]) == 0) {
             run_flag = 0;
-            if (debug_flag) { fprintf(stderr, "S\n"); }
+            if (debug_flag) { fprintf(stderr, "SP\n"); }
         }
         else if (strcmp("START", &read_buf[i]) == 0) {
             run_flag = 1;
-            if (debug_flag) { fprintf(stderr, "S\n"); }
+            if (debug_flag) { fprintf(stderr, "ST\n"); }
         }
         else if (strcmp("OFF", &read_buf[i]) == 0) {
             on_flag = 0;
@@ -157,7 +158,7 @@ int parseReadBuf() {
             fprintf(log_file, "%s\n", &read_buf[i]);
         }
 
-        i += cur_len;
+        i += cur_len + 1;
     }
 
     return i;
@@ -171,6 +172,8 @@ int m_read() {
     int cur_bytes = strlen(read_buf);
     int avail_bytes = 1023 - cur_bytes;
     int new_bytes = read(STDIN_FILENO, &read_buf[cur_bytes], avail_bytes);
+    if (debug_flag) { fprintf(stderr, "read %d bytes\n", new_bytes); }
+
     if (new_bytes == -1) {
         fprintf(stderr, "ERROR: read() return -1, exiting...\n");
         finalize();
@@ -178,15 +181,15 @@ int m_read() {
     }
     else if (new_bytes > 0) {
         read_buf[cur_bytes + new_bytes] = '\0';
+        parseReadBuf();
+        cur_bytes = 1023 - processed_byte;
+        strcpy(swap_buf, &read_buf[processed_byte + 1]);
+        swap_buf[cur_bytes] = '\0';
+        strcpy(read_buf, swap_buf);
+        read_buf[cur_bytes] = '\0';
     }
 
-    parseReadBuf();
-
-    cur_bytes = 1023 - processed_byte;
-    strcpy(swap_buf, &read_buf[processed_byte + 1]);
-    swap_buf[cur_bytes] = '\0';
-    strcpy(read_buf, swap_buf);
-    read_buf[cur_bytes] = '\0';
+    if (debug_flag) { fprintf(stderr, "on_flag: %d, run_flag: %d\n", on_flag, run_flag); }
 
     return cur_bytes;
 }

@@ -189,8 +189,9 @@ int m_read() {
     else if (new_bytes > 0) {
         read_buf[cur_bytes + new_bytes] = '\0';
         parseReadBuf();
-        cur_bytes = 1023 - processed_byte;
-        strcpy(swap_buf, &read_buf[processed_byte + 1]);
+        cur_bytes = new_bytes - processed_byte - 1;
+        // strcpy(swap_buf, &read_buf[processed_byte + 1]);
+        strncpy(swap_buf, &read_buf[processed_byte+1], cur_bytes);
         swap_buf[cur_bytes] = '\0';
         strcpy(read_buf, swap_buf);
         read_buf[cur_bytes] = '\0';

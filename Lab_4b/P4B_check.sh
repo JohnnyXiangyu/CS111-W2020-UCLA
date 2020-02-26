@@ -74,9 +74,9 @@ else
 fi
 
 # get a copy of the input genartion programs
-if [ ! -s $TEST_PGM ]; then
-	downLoad $TEST_PGM $LIBRARY_URL "c" "-lpthread"
-fi
+# if [ ! -s $TEST_PGM ]; then
+# 	downLoad $TEST_PGM $LIBRARY_URL "c" "-lpthread"
+# fi
 
 # read the tarball into a test directory
 TEMP=`pwd`/"CS111_test.$LOGNAME"

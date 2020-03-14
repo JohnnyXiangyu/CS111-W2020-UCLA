@@ -13,33 +13,40 @@ sig_atomic_t volatile on_flag = 1;
 sig_atomic_t volatile run_flag = 1;
 
 static char* error_message =
-    "usage\n  --period=# sample period (s)\n"
-    "  --scale=C/F use Celsius or Fahrenheit (default F)\n"
-    "  --log=FILENAME log sensor reading into file\n"
-    "  --debug activate debug mode";
+    "usage\n"
+    "  --period=#       sample period (s)\n"
+    "  --scale=C/F      use Celsius or Fahrenheit (default F)\n"
+    "  --log=FILENAME   log sensor reading into file\n"
+    "  --debug          activate debug mode\n"
+    "  --host=HOSTNAME  log server host name\n"
+    "  --id=ID          9 digit id to send to server\n";
 
 /* pin configurations */
-const int senPin = 1; /* sensor pin */
-const int butPin = 60; /* button pin */
+const int senPin = 1;   /* sensor pin */
+const int butPin = 60;  /* button pin */
 
-mraa_gpio_context button; /* global variable of button pin */
-mraa_aio_context t_sensor; /* global variable of sensor pin */
+mraa_gpio_context button;   /* global variable of button pin */
+mraa_aio_context t_sensor;  /* global variable of sensor pin */
 
 /* constants defined by groove temp sensor */
 const int B = 4275;
 const float R0 = 100000.0;
 
 /* arguments */
-char scale = 'F'; /* wise people use Celcius, default F */
-int debug_flag = 0; /* flag debug option, default 0 */
-int period = 1; /* time between reading, default 1 */
-int log_flag = 0; /* whether to write into a file, default 0 */
+char scale = 'F';               /* wise people use Celcius, default F */
+int debug_flag = 0;             /* flag debug option, default 0 */
+int period = 1;                 /* time between reading, default 1 */
+int log_flag = 0;               /* whether to write into a file, default 0 */
 static char* log_filename = ""; /* file name to write into */
-FILE* log_file = NULL; /* log target of fprintf */
+FILE* log_file = NULL;          /* log target of fprintf */
+static char* host_name = "";    /* host name given in arguments */
+static char* id = "";           /* id given in arguments, must be 9 digits */
+int port = 0;                   /* port number given in arguments */
+
 
 /* buffering stdin reading */
-char read_buf[1024]; /* buffer for reading stdin */
-char swap_buf[1024]; /* buffer for temporarily store contents of read_buf */
+char read_buf[1024];    /* buffer for reading stdin */
+char swap_buf[1024];    /* buffer for temporarily store contents of read_buf */
 int processed_byte = 0; /* indicating where did last search end, should always point to a \n */
 
 
@@ -206,6 +213,8 @@ int main(int argc, char **argv) {
         {"scale", required_argument, 0, 's'},
         {"log", required_argument, 0, 'l'},
         {"debug", no_argument, 0, 'd'},
+        {"id", required_argument, 0, 'i'},
+        {"host", required_argument, 0, 'h'},
         {0, 0, 0, 0}
     };
     int temp = 0;
@@ -237,12 +246,43 @@ int main(int argc, char **argv) {
           case 'd':
             debug_flag = 1;
             break;
+          case 'i':
+            if (strlen(optarg) != 9) {
+                fprintf(stderr, "%s\r\n", error_message);
+                exit(1);
+            }
+            else {
+                id = optarg;
+            }
+            break;
           case '?':
             fprintf(stderr, "%s\r\n", error_message);
             exit(1);
             break;
         }
     }
+
+    /* parse naked argument port number */
+    if (optind < argc) {
+        port = atoi(argv[optind]);
+        if (port < 0) {
+            fprintf(stderr, "%s\r\n", error_message);
+            exit(1);
+        }
+    }
+
+    /* print out all received argument if debug is enabled */
+    if (debug_flag) {
+        fprintf(stderr, "scale: %c, period: %d, logfile: %s, host name: %s, id: %s, port: %d\n",
+            scale,
+            period,
+            log_filename,
+            host_name,
+            id,
+            port);
+    }
+
+    /* open log file */
     if (log_flag) {
         log_file = fopen(log_filename, "w+");
         if (log_file == NULL) {
@@ -251,13 +291,13 @@ int main(int argc, char **argv) {
         }
     }
 
-    // prepare to poll()
+    /* prepare to poll() */
     struct pollfd fds;
     fds.fd = STDIN_FILENO;
     fds.events = POLLIN;
 
-    button = mraa_gpio_init(butPin); /* register a gpio context, for pin 60, name button */
-    t_sensor = mraa_aio_init(senPin); /* register a AIO context, for pin 1, name t_sensor */
+    button = mraa_gpio_init(butPin);    /* register a gpio context, for pin 60, name button */
+    t_sensor = mraa_aio_init(senPin);   /* register a AIO context, for pin 1, name t_sensor */
     
     mraa_gpio_dir(button, MRAA_GPIO_IN); /* configure buzzer to output pin */
 

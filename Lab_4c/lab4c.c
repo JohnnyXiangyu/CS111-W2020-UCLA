@@ -16,10 +16,11 @@ static char* error_message =
     "usage\n"
     "  --period=#       sample period (s)\n"
     "  --scale=C/F      use Celsius or Fahrenheit (default F)\n"
-    "  --log=FILENAME   log sensor reading into file\n"
     "  --debug          activate debug mode\n"
-    "  --host=HOSTNAME  log server host name\n"
-    "  --id=ID          9 digit id to send to server\n";
+    "  --log=FILENAME   [MANDATORY] log sensor reading into file\n"
+    "  --host=HOSTNAME  [MANDATORY] log server host name\n"
+    "  --id=ID          [MANDATORY] 9 digit id to send to server\n"
+    "  PORTNUMBER       [MANDATORY] port number to connect to\n";
 
 /* pin configurations */
 const int senPin = 1;   /* sensor pin */
@@ -41,7 +42,7 @@ static char* log_filename = ""; /* file name to write into */
 FILE* log_file = NULL;          /* log target of fprintf */
 static char* host_name = "";    /* host name given in arguments */
 static char* id = "";           /* id given in arguments, must be 9 digits */
-int port = 0;                   /* port number given in arguments */
+int port = -1;                   /* port number given in arguments */
 
 
 /* buffering stdin reading */
@@ -221,8 +222,11 @@ int main(int argc, char **argv) {
     while ((temp = getopt_long(argc, argv, "-", options, NULL)) != -1) {
         switch (temp) {
           case 1:
-            fprintf(stderr, "Bad non-option argument: %s\n%s\n", argv[optind - 1], error_message);
-            exit(1);
+            port = atoi(argv[optind - 1]);
+            if (port < 0) {
+                fprintf(stderr, "%s\r\n", error_message);
+                exit(1);
+            }
             break;
           case 'p':
             period = atoi(optarg);
@@ -255,6 +259,9 @@ int main(int argc, char **argv) {
                 id = optarg;
             }
             break;
+          case 'h':
+            host_name = optarg;
+            break;
           case '?':
             fprintf(stderr, "%s\r\n", error_message);
             exit(1);
@@ -280,6 +287,12 @@ int main(int argc, char **argv) {
             host_name,
             id,
             port);
+    }
+
+    /* enforce id, host, and log */
+    if (strcmp(id, "") == 0 || strcmp(host_name, "") == 0 || port == -1) {
+        fprintf(stderr, "ERROR: required fields not specified\n%s\r\n", error_message);
+        exit(1);
     }
 
     /* open log file */

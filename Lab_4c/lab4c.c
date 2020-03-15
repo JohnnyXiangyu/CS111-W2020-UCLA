@@ -61,7 +61,8 @@ int processed_byte = 0; /* indicating where did last search end, should always p
 
 /* declare my function wraps */
 void printTime();
-void printTemp(float in_temp);
+// void printTemp(float in_temp);
+void printTimeAndTemp(float in_temp);
 void finalize();
 void intHandler();
 float convertTemp(int a);
@@ -73,11 +74,11 @@ int m_connect(int __fd, __CONST_SOCKADDR_ARG __addr, socklen_t __len);
 
 
 /* separate function that prints formatted time */
-void printTime() {
+void printTime(char* ext_str) {
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
     char time_str[100];
-    sprintf(time_str, "%02d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
+    sprintf(time_str, "%02d:%02d:%02d%s", tm.tm_hour, tm.tm_min, tm.tm_sec, ext_str);
     m_write(time_str);
     // dprintf(sockfd, "%02d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
     // if (log_flag) {
@@ -86,16 +87,37 @@ void printTime() {
 }
 
 
-/* separate function that prints formatted temperature INT.DEC */
-void printTemp(float in_temp) {
+// /* separate function that prints formatted temperature INT.DEC */
+// void printTemp(float in_temp) {
+//     in_temp *= 10;
+//     char temp_str[100];
+//     sprintf(temp_str, "%d.%d", (int) in_temp / 10, (int) in_temp % 10);
+//     m_write(temp_str);
+//     // printf("%d.%d", (int) in_temp / 10, (int) in_temp % 10);
+//     // if (log_flag) {
+//     //     fprintf(log_file, "%d.%d", (int) in_temp / 10, (int) in_temp % 10);
+//     // }
+// }
+
+/* format and print a full-report string */
+void printTimeAndTemp(float in_temp) {
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    // char time_str[200];
+    // sprintf(time_str, "%02d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
+    // m_write(time_str);
     in_temp *= 10;
-    char temp_str[100];
-    sprintf(temp_str, "%d.%d", (int) in_temp / 10, (int) in_temp % 10);
-    m_write(temp_str);
-    // printf("%d.%d", (int) in_temp / 10, (int) in_temp % 10);
-    // if (log_flag) {
-    //     fprintf(log_file, "%d.%d", (int) in_temp / 10, (int) in_temp % 10);
-    // }
+    // char temp_str[100];
+
+    char full_report[200];
+    sprintf(full_report, "%02d:%02d:%02d %d.%d\n", 
+        tm.tm_hour, 
+        tm.tm_min, 
+        tm.tm_sec, 
+        (int) in_temp / 10, 
+        (int) in_temp % 10
+    );
+    m_write(full_report);
 }
 
 
@@ -105,8 +127,7 @@ void finalize() {
     mraa_aio_close(t_sensor);
 
     /* print final message */
-    printTime();
-    m_write(" SHUTDOWN\n");
+    printTime(" SHUTDOWN\n");
 
     /* close open file */
     if (log_file != NULL) {
@@ -195,8 +216,6 @@ int parseReadBuf() {
 
 /* read input from stdin and append to read_buf */
 int m_read() {
-    if (debug_flag) { fprintf(stderr, "reading\n"); }
-
     int cur_bytes = strlen(read_buf);
     int avail_bytes = 1023 - cur_bytes;
     int new_bytes = read(sockfd, &read_buf[cur_bytes], avail_bytes);
@@ -369,7 +388,7 @@ int main(int argc, char **argv) {
 
     /* before start, send and log id message */
     char initial_message[50];
-    sprintf(&initial_message[0], "ID=ID-%s\n", id);
+    sprintf(&initial_message[0], "ID=%s\n", id);
     m_write(initial_message);
 
     /* prepare to poll() */
@@ -394,10 +413,9 @@ int main(int argc, char **argv) {
             /* convert raw input to temperature C */
             float cur_temp = convertTemp(analog_in);
 
-            printTime();
-            m_write(" ");
-            printTemp(cur_temp);
-            m_write("\n");
+            // printTime();
+            // printTemp(cur_temp);
+            printTimeAndTemp(cur_temp);
         }
 
         /* read and execute stdin */

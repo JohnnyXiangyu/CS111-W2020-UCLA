@@ -13,6 +13,7 @@
 #include <netinet/in.h>
 #include <ctype.h>
 #include <errno.h>
+#include <unistd.h>
 
 sig_atomic_t volatile on_flag = 1;
 sig_atomic_t volatile run_flag = 1;
@@ -246,7 +247,10 @@ int m_read() {
 /* write into log and server */
 void m_write(char* new_str) {
     if (sockfd != 0) { /* send to server */
-        dprintf(sockfd, "%s", new_str);
+        char new_wrt[100];
+        sprintf(new_wrt, "%s", new_str);
+        write(sockfd, new_wrt, strlen(new_wrt));
+        // dprintf(sockfd, "%s", new_str);
     }
     if (log_flag) { /* write in log */
         fprintf(log_file, "%s", new_str);

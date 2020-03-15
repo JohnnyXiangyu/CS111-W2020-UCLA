@@ -1,4 +1,5 @@
 .vscode/
 *.tar.gz
-lab4c
+lab4c_tls
+lab4c_tcp
 *.log

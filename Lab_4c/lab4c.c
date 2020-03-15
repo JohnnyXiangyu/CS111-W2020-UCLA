@@ -143,8 +143,6 @@ float convertTemp(int a) {
 
 /* parse read_buf and execute the commands */
 int parseReadBuf() {
-    if (debug_flag) { fprintf(stderr, "parsing\n"); }
-
     /* loop read_buffer and replace all newlines with zero-byte */
     int i = 0;
     int max = strlen(read_buf);

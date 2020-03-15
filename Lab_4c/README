@@ -10,9 +10,8 @@ TODO:
     2. finish smoke test script
 
 FILES: 
-README this file
-Makefile makefile that contains recipe for submission tarball, executable and 
-         some command shortcuts
-lab4b.c source file of this project
-lab4b_check.sh contains a simple smoke test that tests the program's ability of
-               correctly logging all commands and a SHUTDOWN sequence
+README          this file
+Makefile        makefile that contains recipe for submission tarball, 
+                executable and some command shortcuts
+lab4b_tcp.c     source file of tcp implementation
+lab4b_tls.c     source file of tls implementation

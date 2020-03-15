@@ -3,3 +3,5 @@
 lab4c_tls
 lab4c_tcp
 *.log
+sanity/*
+!sanity/P4C_check.sh

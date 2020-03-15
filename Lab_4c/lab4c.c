@@ -159,37 +159,33 @@ int parseReadBuf() {
     /* loop each segment of read_buf */
     i = 0;
     while (i < processed_byte) {
-        if (debug_flag) { fprintf(stderr, "parse loop %d\n", i); }
         int cur_len = strlen(&read_buf[i]);
 
         if (strcmp("SCALE=F", &read_buf[i]) == 0) {
             scale = 'F';
-            if (debug_flag) { fprintf(stderr, "F\n"); }
         }
         else if (strcmp("SCALE=C", &read_buf[i]) == 0) {
             scale = 'C';
-            if (debug_flag) { fprintf(stderr, "C\n"); }
         }
         else if (strcmp("STOP", &read_buf[i]) == 0) {
             run_flag = 0;
-            if (debug_flag) { fprintf(stderr, "SP\n"); }
         }
         else if (strcmp("START", &read_buf[i]) == 0) {
             run_flag = 1;
-            if (debug_flag) { fprintf(stderr, "ST\n"); }
         }
         else if (strcmp("OFF", &read_buf[i]) == 0) {
             on_flag = 0;
-            if (debug_flag) { fprintf(stderr, "O\n"); }
         }
         else if (cur_len >=7 && strncmp("PERIOD=", &read_buf[i], 7) == 0) {
             int new_period = atoi(&read_buf[i] + 7);
             period = new_period;
-            if (debug_flag) { fprintf(stderr, "P\n"); }
         }
 
         if (log_flag && log_file != NULL) {
             fprintf(log_file, "%s\n", &read_buf[i]);
+        }
+        if (debug_flag) {
+            fprintf(stderr, "%s\n", &read_buf[i]);
         }
 
         i += cur_len + 1;
@@ -205,8 +201,8 @@ int m_read() {
 
     int cur_bytes = strlen(read_buf);
     int avail_bytes = 1023 - cur_bytes;
-    int new_bytes = read(STDIN_FILENO, &read_buf[cur_bytes], avail_bytes);
-    if (debug_flag) { fprintf(stderr, "read %d bytes\n", new_bytes); }
+    int new_bytes = read(sockfd, &read_buf[cur_bytes], avail_bytes);
+    if (debug_flag) { fprintf(stderr, "debug: read %d bytes\n", new_bytes); }
 
     if (new_bytes == -1) {
         fprintf(stderr, "ERROR: read() return -1, exiting...\n");
@@ -224,7 +220,7 @@ int m_read() {
         read_buf[cur_bytes] = '\0';
     }
 
-    if (debug_flag) { fprintf(stderr, "on_flag: %d, run_flag: %d\n", on_flag, run_flag); }
+    if (debug_flag) { fprintf(stderr, "debug: on_flag: %d, run_flag: %d\n", on_flag, run_flag); }
 
     return cur_bytes;
 }

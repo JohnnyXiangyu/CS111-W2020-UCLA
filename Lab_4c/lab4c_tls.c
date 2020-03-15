@@ -388,7 +388,8 @@ int main(int argc, char **argv) {
     SSL_library_init();
     SSL_load_error_strings();
     OpenSSL_add_all_algorithms();
-    if ((context = SSL_CTX_new(TLS_client_method())) == NULL) {
+
+    if ((context = SSL_CTX_new(TLSv1_client_method())) == NULL) {
         fprintf(stderr, "SSL_CTX_new() return NULL, exiting...\n");
         exit(2);
     }

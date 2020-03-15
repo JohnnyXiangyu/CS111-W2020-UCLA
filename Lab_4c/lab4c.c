@@ -8,6 +8,11 @@
 #include <mraa/aio.h>
 #include <stdlib.h>
 #include <sys/poll.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <ctype.h>
+#include <errno.h>
 
 sig_atomic_t volatile on_flag = 1;
 sig_atomic_t volatile run_flag = 1;
@@ -42,33 +47,55 @@ static char* log_filename = ""; /* file name to write into */
 FILE* log_file = NULL;          /* log target of fprintf */
 static char* host_name = "";    /* host name given in arguments */
 static char* id = "";           /* id given in arguments, must be 9 digits */
-int port = -1;                   /* port number given in arguments */
+int port = -1;                  /* port number given in arguments */
 
+/* socket structures */
+struct hostent *host = NULL;    /* host server */
+struct sockaddr_in host_addr;   /* socket address */
+int sockfd = 0;                   /* socket file descriptor */
 
 /* buffering stdin reading */
 char read_buf[1024];    /* buffer for reading stdin */
 char swap_buf[1024];    /* buffer for temporarily store contents of read_buf */
 int processed_byte = 0; /* indicating where did last search end, should always point to a \n */
 
+/* declare my function wraps */
+void printTime();
+void printTemp(float in_temp);
+void finalize();
+void intHandler();
+float convertTemp(int a);
+int parseReadBuf();
+void m_write(char* new_str);
+int m_read();
+int m_socket(int __domain, int __type, int __protocol);
+int m_connect(int __fd, __CONST_SOCKADDR_ARG __addr, socklen_t __len);
+
 
 /* separate function that prints formatted time */
 void printTime() {
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    printf("%02d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
-    if (log_flag) {
-        fprintf(log_file, "%02d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
-    }
+    char time_str[100];
+    sprintf(time_str, "%02d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
+    m_write(time_str);
+    // dprintf(sockfd, "%02d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
+    // if (log_flag) {
+    //     fprintf(log_file, "%02d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
+    // }
 }
 
 
 /* separate function that prints formatted temperature INT.DEC */
 void printTemp(float in_temp) {
     in_temp *= 10;
-    printf("%d.%d", (int) in_temp / 10, (int) in_temp % 10);
-    if (log_flag) {
-        fprintf(log_file, "%d.%d", (int) in_temp / 10, (int) in_temp % 10);
-    }
+    char temp_str[100];
+    sprintf(temp_str, "%d.%d", (int) in_temp / 10, (int) in_temp % 10);
+    m_write(temp_str);
+    // printf("%d.%d", (int) in_temp / 10, (int) in_temp % 10);
+    // if (log_flag) {
+    //     fprintf(log_file, "%d.%d", (int) in_temp / 10, (int) in_temp % 10);
+    // }
 }
 
 
@@ -79,11 +106,10 @@ void finalize() {
 
     /* print final message */
     printTime();
-    printf(" SHUTDOWN\n");
+    m_write(" SHUTDOWN\n");
 
     /* close open file */
     if (log_file != NULL) {
-        fprintf(log_file, " SHUTDOWN\n");
         fclose(log_file);
     }
 }
@@ -204,6 +230,44 @@ int m_read() {
 }
 
 
+/* write into log and server */
+void m_write(char* new_str) {
+    if (sockfd != 0) { /* send to server */
+        dprintf(sockfd, "%s", new_str);
+    }
+    if (log_flag) { /* write in log */
+        fprintf(log_file, "%s", new_str);
+    }
+    if (debug_flag) {
+        fprintf(stderr, "%s", new_str);
+    }
+}
+
+
+/* wrap socket() system call */
+int m_socket(int __domain, int __type, int __protocol) {
+    int m_sock = socket(__domain, __type, __protocol);
+    if (m_sock < 0) {
+        fprintf(stderr, "ERROR: socket() system call failed, exiting...\n");
+        exit(1);
+    }
+    return m_sock;
+}
+
+
+/* wrap function for connect() call (really not necessary) */
+int m_connect(int __fd, __CONST_SOCKADDR_ARG __addr, socklen_t __len) {
+    int rc = connect(__fd, __addr, __len);
+    if (rc < 0) {
+        fprintf(stderr, "ERROR: connect() call failed: %s\nexiting...\n", strerror(errno));
+        exit(1);
+    }
+    else {
+        return rc;
+    }
+}
+
+
 int main(int argc, char **argv) {
     /* initialize read_buf to empty string */
     read_buf[0] = '\0';
@@ -269,15 +333,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    /* parse naked argument port number */
-    if (optind < argc) {
-        port = atoi(argv[optind]);
-        if (port < 0) {
-            fprintf(stderr, "%s\r\n", error_message);
-            exit(1);
-        }
-    }
-
     /* print out all received argument if debug is enabled */
     if (debug_flag) {
         fprintf(stderr, "scale: %c, period: %d, logfile: %s, host name: %s, id: %s, port: %d\n",
@@ -304,9 +359,29 @@ int main(int argc, char **argv) {
         }
     }
 
+    /* open socket */
+    sockfd = m_socket(AF_INET, SOCK_STREAM, 0);
+    if ((host = gethostbyname(host_name)) == NULL) {
+        fprintf(stderr, "ERROR: host not found, exiting...\n");
+    }
+    bzero(&host_addr, sizeof(host_addr));
+    host_addr.sin_family = AF_INET;
+    // bcopy(&host_addr.sin_addr.s_addr, &(host->h_addr_list[0]), host->h_length);
+    bcopy((char *)host->h_addr,
+          (char *)&host_addr.sin_addr.s_addr,
+          host->h_length);
+    host_addr.sin_port = htons(port);
+    m_connect(sockfd, (struct sockaddr *)&host_addr, sizeof(host_addr));
+
+    /* before start, send and log id message */
+    char initial_message[50];
+    sprintf(&initial_message[0], "ID=ID-%s\n", id);
+    m_write(initial_message);
+
     /* prepare to poll() */
     struct pollfd fds;
-    fds.fd = STDIN_FILENO;
+    // fds.fd = STDIN_FILENO;
+    fds.fd = sockfd;
     fds.events = POLLIN;
 
     button = mraa_gpio_init(butPin);    /* register a gpio context, for pin 60, name button */
@@ -326,11 +401,9 @@ int main(int argc, char **argv) {
             float cur_temp = convertTemp(analog_in);
 
             printTime();
-            printf(" ");
-            if (log_flag) { fprintf(log_file, " "); }
+            m_write(" ");
             printTemp(cur_temp);
-            printf("\n");
-            if (log_flag) { fprintf(log_file, "\n"); }
+            m_write("\n");
         }
 
         /* read and execute stdin */

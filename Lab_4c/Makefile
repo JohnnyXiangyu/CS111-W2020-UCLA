@@ -24,3 +24,8 @@ install: $(files)
 clean: 
 	rm -f lab4c-805061659.tar.gz
 	rm -f lab4c
+
+update:
+	git fetch
+	git pull
+	make

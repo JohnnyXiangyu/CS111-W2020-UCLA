@@ -244,7 +244,10 @@ void m_write(char* new_str) {
     if (sockfd != 0) { /* send to server */
         char new_wrt[100];
         sprintf(new_wrt, "%s", new_str);
-        SSL_write(ssl, new_wrt, strlen(new_wrt));
+        if (SSL_write(ssl, new_wrt, strlen(new_wrt)) <= 0) {
+            fprintf(stderr, "ERROR: failed to send message over ssl, exiting...\n");
+            exit(2);
+        }
     }
     if (log_flag) { /* write in log */
         fprintf(log_file, "%s", new_str);
@@ -374,8 +377,9 @@ int main(int argc, char **argv) {
     sockfd = m_socket(AF_INET, SOCK_STREAM, 0);
     if ((host = gethostbyname(host_name)) == NULL) {
         fprintf(stderr, "ERROR: host not found, exiting...\n");
+        exit(2);
     }
-    bzero(&host_addr, sizeof(host_addr));
+    bzero((char*) &host_addr, sizeof(host_addr));
     host_addr.sin_family = AF_INET;
     // bcopy(&host_addr.sin_addr.s_addr, &(host->h_addr_list[0]), host->h_length);
     bcopy((char *)host->h_addr,
@@ -417,14 +421,18 @@ int main(int argc, char **argv) {
     fds.fd = sockfd;
     fds.events = POLLIN;
 
-    button = mraa_gpio_init(butPin);    /* register a gpio context, for pin 60, name button */
+    // button = mraa_gpio_init(butPin);    /* register a gpio context, for pin 60, name button */
     t_sensor = mraa_aio_init(senPin);   /* register a AIO context, for pin 1, name t_sensor */
+    if (t_sensor == NULL) {
+        fprintf(stderr, "ERROR: mraa_aio_init() return NULL, exiting...\n");
+        exit(2);
+    }
     
     mraa_gpio_dir(button, MRAA_GPIO_IN); /* configure buzzer to output pin */
 
     /* register a button handler */
     signal(SIGINT, intHandler); // should sigint be registered?
-    mraa_gpio_isr(button, MRAA_GPIO_EDGE_RISING, &intHandler, NULL);
+    // mraa_gpio_isr(button, MRAA_GPIO_EDGE_RISING, &intHandler, NULL);
 
     while (on_flag) {
         if (run_flag) {
@@ -441,7 +449,7 @@ int main(int argc, char **argv) {
         if (rc == -1) {
             fprintf(stderr, "ERROR: poll() failed, exiting...\n");
             finalize();
-            exit(1);
+            exit(2);
         }
         else if (rc > 0) {
             if (fds.revents & POLL_IN) { /* if there's input from stdin */

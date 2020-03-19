@@ -53,7 +53,7 @@ int port = -1;                  /* port number given in arguments */
 /* socket structures */
 struct hostent *host = NULL;    /* host server */
 struct sockaddr_in host_addr;   /* socket address */
-int sockfd = 0;                   /* socket file descriptor */
+int sockfd = 0;                 /* socket file descriptor */
 
 /* buffering stdin reading */
 char read_buf[1024];    /* buffer for reading stdin */
@@ -249,7 +249,10 @@ void m_write(char* new_str) {
     if (sockfd != 0) { /* send to server */
         char new_wrt[100];
         sprintf(new_wrt, "%s", new_str);
-        write(sockfd, new_wrt, strlen(new_wrt));
+        if (write(sockfd, new_wrt, strlen(new_wrt)) < 0) {
+            fprintf(stderr, "ERROR: writing socket failed, exiting...\n");
+            exit(2);
+        }
         // dprintf(sockfd, "%s", new_str);
     }
     if (log_flag) { /* write in log */
@@ -266,7 +269,7 @@ int m_socket(int __domain, int __type, int __protocol) {
     int m_sock = socket(__domain, __type, __protocol);
     if (m_sock < 0) {
         fprintf(stderr, "ERROR: socket() system call failed, exiting...\n");
-        exit(1);
+        exit(2);
     }
     return m_sock;
 }
@@ -277,7 +280,7 @@ int m_connect(int __fd, __CONST_SOCKADDR_ARG __addr, socklen_t __len) {
     int rc = connect(__fd, __addr, __len);
     if (rc < 0) {
         fprintf(stderr, "ERROR: connect() call failed: %s\nexiting...\n", strerror(errno));
-        exit(1);
+        exit(2);
     }
     else {
         return rc;
@@ -380,8 +383,9 @@ int main(int argc, char **argv) {
     sockfd = m_socket(AF_INET, SOCK_STREAM, 0);
     if ((host = gethostbyname(host_name)) == NULL) {
         fprintf(stderr, "ERROR: host not found, exiting...\n");
+        exit(2);
     }
-    bzero(&host_addr, sizeof(host_addr));
+    bzero((char*) &host_addr, sizeof(host_addr));
     host_addr.sin_family = AF_INET;
     // bcopy(&host_addr.sin_addr.s_addr, &(host->h_addr_list[0]), host->h_length);
     bcopy((char *)host->h_addr,
@@ -401,14 +405,18 @@ int main(int argc, char **argv) {
     fds.fd = sockfd;
     fds.events = POLLIN;
 
-    button = mraa_gpio_init(butPin);    /* register a gpio context, for pin 60, name button */
+    // button = mraa_gpio_init(butPin);    /* register a gpio context, for pin 60, name button */
     t_sensor = mraa_aio_init(senPin);   /* register a AIO context, for pin 1, name t_sensor */
-    
+    if (t_sensor == NULL) {
+        fprintf(stderr, "ERROR: mraa_aio_init() return NULL, exiting...\n");
+        exit(2);
+    }
+
     mraa_gpio_dir(button, MRAA_GPIO_IN); /* configure buzzer to output pin */
 
     /* register a button handler */
     signal(SIGINT, intHandler); // should sigint be registered?
-    mraa_gpio_isr(button, MRAA_GPIO_EDGE_RISING, &intHandler, NULL);
+    // mraa_gpio_isr(button, MRAA_GPIO_EDGE_RISING, &intHandler, NULL);
 
     while (on_flag) {
         if (run_flag) {
@@ -427,7 +435,7 @@ int main(int argc, char **argv) {
         if (rc == -1) {
             fprintf(stderr, "ERROR: poll() failed, exiting...\n");
             finalize();
-            exit(1);
+            exit(2);
         }
         else if (rc > 0) {
             if (fds.revents & POLL_IN) { /* if there's input from stdin */

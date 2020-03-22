@@ -1,3 +1,7 @@
+// NAME: Xiangyu Wan
+// EMAIL: wonjohnny@outlook.com
+// ID: 805061659
+
 #include <stdio.h>
 #include <signal.h>
 #include <math.h>
@@ -347,6 +351,12 @@ int main(int argc, char **argv) {
         }
     }
 
+    /* enforce id, host, and log */
+    if (strcmp(id, "") == 0 || strcmp(host_name, "") == 0 || port == -1 || !log_flag) {
+        fprintf(stderr, "ERROR: required fields not specified\n%s\r\n", error_message);
+        exit(1);
+    }
+
     /* print out all received argument if debug is enabled */
     if (debug_flag) {
         fprintf(stderr, "scale: %c, period: %d, logfile: %s, host name: %s, id: %s, port: %d\n",
@@ -356,12 +366,6 @@ int main(int argc, char **argv) {
             host_name,
             id,
             port);
-    }
-
-    /* enforce id, host, and log */
-    if (strcmp(id, "") == 0 || strcmp(host_name, "") == 0 || port == -1) {
-        fprintf(stderr, "ERROR: required fields not specified\n%s\r\n", error_message);
-        exit(1);
     }
 
     /* open log file */
@@ -401,7 +405,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "SSL_new() return NULL, exiting...\n");
         exit(2);
     }
-    if (!SSL_set_fd(ssl, sockfd)) {
+    if (SSL_set_fd(ssl, sockfd) == 0) {
         fprintf(stderr, "SSL_set_fd() return 0, exiting...\n");
         exit(2);
     }

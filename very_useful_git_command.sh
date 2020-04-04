@@ -21,14 +21,6 @@ git filter-branch --force --index-filter \
   --prune-empty --tag-name-filter cat -- --all
 
 git filter-branch --force --index-filter \
-  'git rm --cached --ignore-unmatch Lab_3a/README' \
-  --prune-empty --tag-name-filter cat -- --all
-
-git filter-branch --force --index-filter \
-  'git rm --cached --ignore-unmatch Lab_3b/README' \
-  --prune-empty --tag-name-filter cat -- --all
-
-git filter-branch --force --index-filter \
   'git rm --cached --ignore-unmatch Lab_4a/README' \
   --prune-empty --tag-name-filter cat -- --all
 

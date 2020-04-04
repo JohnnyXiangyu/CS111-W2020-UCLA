@@ -5,9 +5,16 @@ All projects have been done with WSL and VSCode.
 
 ## Projects
 
-Porject 0: Warmup  
-Project 1a: Terminal I/O and Inter-Process Communication  
-Project 1b: Compressed Network Communication  
+P0. Warmup
+P1A. I/O and IPC
+P1B. Compressed Communication
+P4A. Embedded System Bringup
+P2A. Mutual Exclusion
+P2B. Contention
+P4B. Sensors and communication
+P3A. File System interpretation (optionally in 2 person teams)
+P3B. File System analysis (optionally in 2 person teams)
+P4C. IOT Secure communication
 
 ## Notes
 

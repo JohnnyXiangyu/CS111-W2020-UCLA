@@ -1,5 +1,5 @@
 cc=gcc
-flags=-g -Wall -Wextra -lpthread -lprofiler 
+flags=-g -Wall -Wextra -lpthread
 
 build: lab2_list
 
